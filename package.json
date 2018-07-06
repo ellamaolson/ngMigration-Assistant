@@ -1,0 +1,21 @@
+{
+  "name": "my-migrate-path",
+  "version": "0.0.0",
+  "description": "An analysis tool to determine which migration path from AngularJS to Angular is right for you. ",
+  "main": "index.ts",
+  "repository": "https://github.com/ellamaolson/my-migration-path.git",
+  "author": "Elana Olson",
+  "license": "MIT",
+  "dependencies": {
+    "@types/node": "^10.5.1",
+    "eslint": "^5.0.1",
+    "eslint-config-google": "^0.9.1",
+    "ts-node": "^7.0.0",
+    "ts-node-dev": "^1.0.0-pre.26",
+    "tslint": "^5.10.0",
+    "typescript": "^2.9.2"
+  },
+  "scripts": {
+    "start": "ts-node-dev app.ts"
+  }
+}

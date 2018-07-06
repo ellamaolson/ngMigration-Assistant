@@ -1,0 +1,42 @@
+{
+  "name": "node-notifier",
+  "version": "4.6.1",
+  "description": "A Node.js module for sending notifications on native Mac, Windows (post and pre 8) and Linux (or Growl as fallback)",
+  "main": "index.js",
+  "directories": {
+    "example": "example"
+  },
+  "scripts": {
+    "test": "./node_modules/.bin/mocha -R spec"
+  },
+  "repository": "git@github.com:mikaelbr/node-notifier.git",
+  "keywords": [
+    "notification center",
+    "mac os x 10.8",
+    "notify",
+    "terminal-notifier",
+    "notify-send",
+    "growl",
+    "windows 8 notification",
+    "toaster",
+    "notification"
+  ],
+  "author": "Mikael Brevik",
+  "license": "MIT",
+  "devDependencies": {
+    "mocha": "^3.0.0",
+    "should": "^4.0.4"
+  },
+  "dependencies": {
+    "cli-usage": "^0.1.1",
+    "growly": "^1.2.0",
+    "lodash.clonedeep": "^3.0.0",
+    "minimist": "^1.1.1",
+    "semver": "^5.1.0",
+    "shellwords": "^0.1.0",
+    "which": "^1.0.5"
+  },
+  "bin": {
+    "notify": "./bin.js"
+  }
+}

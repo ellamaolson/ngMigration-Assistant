@@ -1,0 +1,25 @@
+{
+  "name": "cli-usage",
+  "version": "0.1.7",
+  "description": "Easily show CLI usage from a markdown source file",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha tests.js -R spec"
+  },
+  "keywords": [
+    "CLI-Usage",
+    "Markdown",
+    "Usage",
+    "CLI",
+    "Print-Usage"
+  ],
+  "author": "Mikael Brevik",
+  "license": "MIT",
+  "dependencies": {
+    "marked": "^0.3.12",
+    "marked-terminal": "^2.0.0"
+  },
+  "devDependencies": {
+    "mocha": "^4.1.0"
+  }
+}
