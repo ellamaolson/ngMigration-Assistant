@@ -7,7 +7,6 @@
   "author": "Elana Olson",
   "license": "MIT",
   "dependencies": {
-    "@types/node": "^10.5.1",
     "eslint": "^5.0.1",
     "eslint-config-google": "^0.9.1",
     "ts-node": "^7.0.0",
@@ -17,5 +16,8 @@
   },
   "scripts": {
     "start": "ts-node-dev app.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^10.5.2"
   }
 }
