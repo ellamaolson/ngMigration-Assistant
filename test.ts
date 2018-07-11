@@ -1,14 +1,6 @@
-import { MigrationScanner } from './migrationScanner';
+// import { AppStats } from './app';
 
-MigrationScanner('../testFolderMigrationTool');
-
-if (!checkUnitTests) {
-
-}
-
-if (jsFileCount > 0) {
-
-}
+// let myappstats = new AppStats('../testFolderMigrationTool');
 
 // console.log("Testing Regex");
 
