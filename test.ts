@@ -1,4 +1,4 @@
-import { AppStats } from './app';
+import { AppStats } from './appStats';
 
 //tests -------------------------------------------------------------
 let stats = new AppStats('../testFolderMigrationTool');
