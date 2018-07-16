@@ -52,6 +52,7 @@
     // "emitDecoratorMetadata": true,         /* Enables experimental support for emitting type metadata for decorators. */
   },
   "files": [
-    "appStats.ts"
+    "analysisTool.ts",
+    "main.ts"
   ]
 }

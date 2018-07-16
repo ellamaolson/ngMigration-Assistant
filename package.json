@@ -15,8 +15,8 @@
     "typescript": "^2.9.2"
   },
   "scripts": {
-    "start": "ts-node-dev appStats.ts",
-    "detect": "ts-node-dev test.ts"
+    "start": "ts-node-dev analysisTool.ts",
+    "detect": "ts-node-dev main.ts"
   },
   "devDependencies": {
     "@types/node": "^10.5.2"

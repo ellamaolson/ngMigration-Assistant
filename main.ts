@@ -1,8 +1,7 @@
-import { AppStats } from './appStats';
+import { AnalysisTool } from './analysisTool';
 
 //tests -------------------------------------------------------------
-let stats = new AppStats('../testFolderMigrationTool');
-stats.recommendation();
+let stats = new AnalysisTool ('../testFolderMigrationTool');
 
 // console.log("Testing Regex");
 
