@@ -26,7 +26,8 @@ export class AnalysisTool {
         jsFileCount: 0,
         tsFileCount: 0,
         controllersCount: 0,
-        componentDirectivesCount: 0
+        componentDirectivesCount: 0,
+        linesOfCode: 0
     };
 
     private CODE_LIMIT_MULTIPLIER: number = 1.5;
@@ -80,11 +81,12 @@ export class AnalysisTool {
         } else if (this.analysisResults.controllersCount > 0) {
             console.log("Need to begin converting " + this.analysisResults.controllersCount + " controller(s) to have component directive before upgrading with ngUpgrade.");
             this.maxCodeLimit *= this.CODE_LIMIT_DOUBLE;
-        }  
+        }
     }
 
     /**
-     * Recursively traverses file system and scans each file by calling analysis tests.
+     * Recursively traverses file system and scans each .js/.ts/.html file by calling analysis tests.
+     * Only scan these extensions to avoid scanning node_modules, .json, yarn lock, .md.
      * Attaches current file to next file to produce correct directory and traverse down the tree. 
      * @param path 
      */
@@ -100,20 +102,20 @@ export class AnalysisTool {
             (filename: string, data: string) => this.checkFileForRouter(filename, data),
             (filename: string, data: string) => this.checkFileForUnitTests(filename, data),
             (filename: string, data: string) => this.checkFileForScriptingLanguage(filename, data),
-            (filename: string, data: string) => this.checkFileForComponent(filename, data)
+            (filename: string, data: string) => this.checkFileForComponent(filename, data),
+            (filename: string, data: string) => this.countLinesOfCode(filename, data),
         ];
 
         for (let file of list) {
             console.log(file);
             currentFilePath = path + "/" + file;
-
             if (!fs.statSync(currentFilePath).isDirectory()) {
-                this.checkFileForRootScope(currentFilePath, fs.readFileSync(currentFilePath, "utf8"));
-                for (let test of tests) {
-                    test(currentFilePath, fs.readFileSync(currentFilePath, "utf8"));
+                if (file.substr(-3) === '.js' || file.substr(-3) === '.ts' || file.substr(-5) === '.html') {
+                    for (let test of tests) {
+                        test(currentFilePath, fs.readFileSync(currentFilePath, "utf8"));
+                    }
                 }
-
-            } else {
+            } else if (file != "node_modules") {
                 path = currentFilePath;
                 this.callAnalysisTests(path);
             }
@@ -172,6 +174,28 @@ export class AnalysisTool {
             console.log("--->Found a component-directive in " + filename);
             this.analysisResults.componentDirectivesCount++;
         }
+    }
+
+    /**
+     * Depends on node-sloc to count the number of lines that are not
+     * blank or comments, but actual lines of code in the file system.
+     * Only scans files with extensions: js, ts, or html. Does not scan
+     * node_modules directory.
+     */
+    countLinesOfCode(filename: string, fileData: string) {
+        console.log("Testing out node-sloc!");
+        const sloc = require('node-sloc');
+        const options = {
+            path: filename,
+            extensions: ['js', 'ts', 'html'],
+            ignorePaths: ['node_modules']
+        }
+
+        sloc(options).then((results: any) => {
+            console.log(results.paths, "L: ", results.sloc.sloc, "C: ", results.sloc.comments)
+            this.analysisResults.linesOfCode += results.sloc.sloc;
+            console.log("Total: ", this.analysisResults.linesOfCode);
+        })
     }
 
     /**
