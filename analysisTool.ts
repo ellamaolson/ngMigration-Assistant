@@ -23,6 +23,7 @@ export class AnalysisTool {
         angularjsRouter: false,
         angularRouter: false,
         hasUnitTest: false,
+        compile: false,
         jsFileCount: 0,
         tsFileCount: 0,
         controllersCount: 0,
@@ -41,44 +42,65 @@ export class AnalysisTool {
         console.log("\n********START********");
         setTimeout(() => { }, 100000);
         console.log("***Analysis Tests Section***");
+
+        console.log("Calling countLinesOfCode");
+        this.countLinesOfCode(path).then(() => {
+            this.recommendation();
+        });
         this.callAnalysisTests(path);
-        this.decisionTree();
+        this.maxCodeCalculator();
         console.log("********END********\n")
     }
 
     public recommendation() {
+        let recommendation = '';
         console.log("\n***Recommendation Section***");
-        let appLinesOfCode = 0;
-        if (this.maxCodeLimit > appLinesOfCode) {
-
+        if (this.maxCodeLimit >= this.analysisResults.linesOfCode) {
+            console.log("Max LOC: " + this.maxCodeLimit + ",  Your LOC: " + this.analysisResults.linesOfCode);
+            recommendation = "Rewrite from Scratch!";
+        } else {
+            if (this.analysisResults.tsFileCount > 0 &&
+                this.analysisResults.componentDirectivesCount > 0 &&
+                this.analysisResults.rootScope == false &&
+                this.analysisResults.compile == false) {
+                recommendation = "You are ready to use ngUpgrade.";
+            }
         }
+        return recommendation;
     }
 
-    private decisionTree() {
-        console.log("\n***Decision Tree Outputs***");
+    private maxCodeCalculator() {
+        console.log("\n***Max Code Calculator Outputs***");
         //rootScope
         if (this.analysisResults.rootScope) {
+            console.log("Found rootScope. Refactor rootScope into Service.");
             this.maxCodeLimit *= this.CODE_LIMIT_MULTIPLIER;
         }
-        //angular element
-        //router
+        //compile
+        if (this.analysisResults.compile) {
+            console.log("Found compile. Rewrite compile to eliminate dynamic feature of template.");
+            this.maxCodeLimit *= this.CODE_LIMIT_MULTIPLIER;
+        }
+
         //unit tests
         if (!this.analysisResults.hasUnitTest) {
+            console.log("Found no unit tests.");
             this.maxCodeLimit *= this.CODE_LIMIT_MULTIPLIER;
         }
         //scripting language
         if (this.analysisResults.jsFileCount > 0) {
+            console.log("Found JS files.");
             this.maxCodeLimit *= this.CODE_LIMIT_MULTIPLIER; //(this.jsFileCount / 10); 
             console.log("You still have " + this.analysisResults.jsFileCount + " JavaScript file left to convert to TypeScript.")
-            console.log("You have converted " + this.analysisResults.tsFileCount + " files successfully to TypeScript.");
+            console.log("You have " + this.analysisResults.tsFileCount + " TypeScript files already.");
         }
         //component
-        if (this.analysisResults.componentDirectivesCount > 0 && this.analysisResults.controllersCount == 0) {
-            console.log("Prepared for ngUpgrade!")
-        } else if (this.analysisResults.componentDirectivesCount > 0 && this.analysisResults.controllersCount > 0) {
+        if (this.analysisResults.componentDirectivesCount > 0 && this.analysisResults.controllersCount > 0) {
+            console.log("Found .controller.");
             console.log("Still have " + this.analysisResults.controllersCount + " controller(s) to convert to component directive before upgrading with ngUpgrade");
             this.maxCodeLimit *= this.CODE_LIMIT_MULTIPLIER;
         } else if (this.analysisResults.controllersCount > 0) {
+            console.log("Found .controller.");
             console.log("Need to begin converting " + this.analysisResults.controllersCount + " controller(s) to have component directive before upgrading with ngUpgrade.");
             this.maxCodeLimit *= this.CODE_LIMIT_DOUBLE;
         }
@@ -87,8 +109,7 @@ export class AnalysisTool {
     /**
      * Recursively traverses file system and scans each .js/.ts/.html file by calling analysis tests.
      * Only scan these extensions to avoid scanning node_modules, .json, yarn lock, .md.
-     * Attaches current file to next file to produce correct directory and traverse down the tree. 
-     * @param path 
+     * Attaches current file to next file to produce correct directory and traverse down the tree.
      */
     callAnalysisTests(path: string) {
         console.log("------>Descending into " + path);
@@ -101,9 +122,10 @@ export class AnalysisTool {
             (filename: string, data: string) => this.checkFileForAngularElement(filename, data),
             (filename: string, data: string) => this.checkFileForRouter(filename, data),
             (filename: string, data: string) => this.checkFileForUnitTests(filename, data),
+            (filename: string, data: string) => this.checkFileForCompile(filename, data),
             (filename: string, data: string) => this.checkFileForScriptingLanguage(filename, data),
             (filename: string, data: string) => this.checkFileForComponent(filename, data),
-            (filename: string, data: string) => this.countLinesOfCode(filename, data),
+            //(filename: string, data: string) => this.countLinesOfCode(filename, data),
         ];
 
         for (let file of list) {
@@ -124,35 +146,35 @@ export class AnalysisTool {
 
     checkFileForRootScope(filename: string, fileData: string) {
         if (fileData.match(/\$rootScope/)) {
-            console.log("--->Found Rootscope!");
             this.analysisResults.rootScope = true;
         }
     }
 
     checkFileForAngularElement(filename: string, fileData: string) {
         if (fileData.match(/NgElementConstructor/)) {
-            console.log("--->Angular Element");
             this.analysisResults.angularElement = true;
         }
     }
 
     checkFileForRouter(filename: string, fileData: string) {
         if (fileData.match(/['"]ui\.router['"]/)) {
-            console.log("--->Found UI router");
             this.analysisResults.uiRouter = true;
         } else if (fileData.match(/['"]ngRoute['"]/)) {
-            console.log("--->Found AJS router");
             this.analysisResults.angularjsRouter = true;
         } else if (fileData.match(/['"]\@angular\/router['"]/)) {
-            console.log("--->Found A router");
             this.analysisResults.angularRouter = true;
         }
     }
 
     checkFileForUnitTests(filename: string, fileData: string) {
         if (filename.substr(-7, 4) === 'spec') {
-            console.log("--->Spec found: true!");
             this.analysisResults.hasUnitTest = true;
+        }
+    }
+
+    checkFileForCompile(filename: string, fileData: string) {
+        if (fileData.match(/compile\(/)) {
+            this.analysisResults.compile = true;
         }
     }
 
@@ -166,36 +188,42 @@ export class AnalysisTool {
 
     checkFileForComponent(filename: string, fileData: string) {
         if (fileData.match(/\.controller\(/)) {
-            console.log("--->Found a controller in " + filename);
             this.analysisResults.controllersCount++;
         }
 
         if (fileData.match(/.component\(/)) {
-            console.log("--->Found a component-directive in " + filename);
             this.analysisResults.componentDirectivesCount++;
         }
     }
 
     /**
-     * Depends on node-sloc to count the number of lines that are not
-     * blank or comments, but actual lines of code in the file system.
+     * Depends on node-sloc to count source lines of code.
      * Only scans files with extensions: js, ts, or html. Does not scan
      * node_modules directory.
      */
-    countLinesOfCode(filename: string, fileData: string) {
-        console.log("Testing out node-sloc!");
+    countLinesOfCode(filename: string): Promise <number> {
         const sloc = require('node-sloc');
         const options = {
             path: filename,
             extensions: ['js', 'ts', 'html'],
-            ignorePaths: ['node_modules']
+            ignorePaths: ['node_modules'],
+            ignoreDefault: true
         }
 
-        sloc(options).then((results: any) => {
-            console.log(results.paths, "L: ", results.sloc.sloc, "C: ", results.sloc.comments)
+        // var mySloc = sloc(options).then(function(results: any) {
+        //     //console.log(results.paths, "L: ", results.sloc.sloc, "C: ", results.sloc.comments)
+        //     //this.analysisResults.linesOfCode += results.sloc.sloc;
+        //     //console.log("Total: ", this.analysisResults.linesOfCode);
+        //     console.log("Within the sloc.");
+        //     return results;
+        // });
+        var mySloc = sloc(options).then((results: any) => {
+            //console.log(results.paths, "L: ", results.sloc.sloc, "C: ", results.sloc.comments)
             this.analysisResults.linesOfCode += results.sloc.sloc;
             console.log("Total: ", this.analysisResults.linesOfCode);
-        })
+            return results.sloc.sloc;
+        });
+        return mySloc;
     }
 
     /**
