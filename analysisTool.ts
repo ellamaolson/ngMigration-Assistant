@@ -46,10 +46,10 @@ export class AnalysisTool {
         console.log("Calling countLinesOfCode");
         this.countLinesOfCode(path).then(() => {
             this.recommendation();
+            console.log("********END********\n")
         });
         this.callAnalysisTests(path);
         this.maxCodeCalculator();
-        console.log("********END********\n")
     }
 
     public recommendation() {
@@ -210,31 +210,11 @@ export class AnalysisTool {
             ignoreDefault: true
         }
 
-        // var mySloc = sloc(options).then(function(results: any) {
-        //     //console.log(results.paths, "L: ", results.sloc.sloc, "C: ", results.sloc.comments)
-        //     //this.analysisResults.linesOfCode += results.sloc.sloc;
-        //     //console.log("Total: ", this.analysisResults.linesOfCode);
-        //     console.log("Within the sloc.");
-        //     return results;
-        // });
         var mySloc = sloc(options).then((results: any) => {
-            //console.log(results.paths, "L: ", results.sloc.sloc, "C: ", results.sloc.comments)
             this.analysisResults.linesOfCode += results.sloc.sloc;
             console.log("Total: ", this.analysisResults.linesOfCode);
             return results.sloc.sloc;
         });
         return mySloc;
     }
-
-    /**
-     * Most likely will not include this function, though keeping it here for now.
-     * checkAngularVersion()
-     * check pacakage.json under key dependencies and see AJS version in angular and A in @angular/core
-     * if use bower -> do this: bower.json which has dependencies key and angular
-     * 
-     * if(filename.substr(-12) === 'package.json' || filename.substr(-10) === 'bower.json') {
-            console.log("--->Data: " + fileData);
-            console.log("--->Dependencies: " + fileData.includes("angular"));
-        }
-     * */
 }
