@@ -31,22 +31,20 @@ export class AnalysisTool {
         linesOfCode: 0
     };
 
-    private CODE_LIMIT_MULTIPLIER: number = 1.5;
-    private CODE_LIMIT_DOUBLE: number = 2;
+    private CODE_LIMIT_MULTIPLIER: number = 1.25;
     private VALUE_NOT_FOUND: number = -1;
     private maxCodeLimit: number; // 880 lines considered 1 month's work of coding 
 
 
     constructor(path: string) {
         this.maxCodeLimit = 880;
-        console.log("\n********START********");
+        console.log("\n----------Start Scan----------");
         setTimeout(() => { }, 100000);
-        console.log("***Analysis Tests Section***");
+        console.log("Analysis Tests Section");
 
-        console.log("Calling countLinesOfCode");
         this.countLinesOfCode(path).then(() => {
             this.recommendation();
-            console.log("********END********\n")
+            console.log("----------End Scan----------\n")
         });
         this.callAnalysisTests(path);
         this.maxCodeCalculator();
@@ -54,7 +52,7 @@ export class AnalysisTool {
 
     public recommendation() {
         let recommendation = '';
-        console.log("\n***Recommendation Section***");
+        console.log("\nRecommendation Section");
         if (this.maxCodeLimit >= this.analysisResults.linesOfCode) {
             console.log("Max LOC: " + this.maxCodeLimit + ",  Your LOC: " + this.analysisResults.linesOfCode);
             recommendation = "Rewrite from Scratch!";
@@ -70,7 +68,7 @@ export class AnalysisTool {
     }
 
     private maxCodeCalculator() {
-        console.log("\n***Max Code Calculator Outputs***");
+        console.log("\nMax Code Calculator Outputs");
         //rootScope
         if (this.analysisResults.rootScope) {
             console.log("Found rootScope. Refactor rootScope into Service.");
@@ -102,7 +100,7 @@ export class AnalysisTool {
         } else if (this.analysisResults.controllersCount > 0) {
             console.log("Found .controller.");
             console.log("Need to begin converting " + this.analysisResults.controllersCount + " controller(s) to have component directive before upgrading with ngUpgrade.");
-            this.maxCodeLimit *= this.CODE_LIMIT_DOUBLE;
+            this.maxCodeLimit *= this.CODE_LIMIT_MULTIPLIER;
         }
     }
 
