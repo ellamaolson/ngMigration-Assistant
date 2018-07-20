@@ -7,17 +7,14 @@
   "author": "Elana Olson",
   "license": "MIT",
   "dependencies": {
-    "eslint": "^5.0.1",
-    "eslint-config-google": "^0.9.1",
     "node-sloc": "^0.1.11",
-    "sloc": "^0.2.0",
+    "readline-sync": "^1.4.9",
     "ts-node": "^7.0.0",
     "ts-node-dev": "^1.0.0-pre.26",
     "tslint": "^5.10.0",
     "typescript": "^2.9.2"
   },
   "scripts": {
-    "start": "ts-node-dev analysisTool.ts",
     "detect": "ts-node-dev main.ts"
   },
   "devDependencies": {
