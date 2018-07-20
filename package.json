@@ -15,7 +15,7 @@
     "typescript": "^2.9.2"
   },
   "scripts": {
-    "detect": "ts-node-dev main.ts"
+    "start": "ts-node-dev main.ts"
   },
   "devDependencies": {
     "@types/node": "^10.5.2"
