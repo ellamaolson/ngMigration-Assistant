@@ -8,6 +8,7 @@
   "license": "MIT",
   "dependencies": {
     "node-sloc": "^0.1.11",
+    "parse-gitignore": "^0.5.1",
     "readline-sync": "^1.4.9",
     "ts-node": "^7.0.0",
     "ts-node-dev": "^1.0.0-pre.26",
@@ -15,7 +16,7 @@
     "typescript": "^2.9.2"
   },
   "scripts": {
-    "start": "ts-node-dev main.ts"
+    "start": "export TS_NODE_FILES=true;ts-node-dev main.ts"
   },
   "devDependencies": {
     "@types/node": "^10.5.2"

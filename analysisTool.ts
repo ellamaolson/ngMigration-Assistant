@@ -13,6 +13,10 @@
  */
 
 import * as fs from 'fs';
+import { default as nodesloc } from 'node-sloc';
+//import {default as gitignore} from 'parse-gitignore';
+//const nodesloc = require('node-sloc');
+const gitignore = require('parse-gitignore');
 
 export class AnalysisTool {
 
@@ -43,6 +47,7 @@ export class AnalysisTool {
             console.log(this.recommendation());
             console.log("MaxCodeLimit: " + Math.round(this.analysisResults.maxCodeLimit) + ", SLOC: " + this.analysisResults.linesOfCode + "\n");
         });
+        this.retrieveGitIgnorePaths(path);
         this.runAnalysisTests(path);
         this.reportGenerator();
     }
@@ -50,7 +55,7 @@ export class AnalysisTool {
     public recommendation() {
         let recommendation = '';
         console.log("\n**Your Recommendation**");
-        
+
         if (this.analysisResults.maxCodeLimit >= this.analysisResults.linesOfCode) {
             recommendation = "Rewrite your app from scratch as an Angular application.";
         } else {
@@ -58,14 +63,14 @@ export class AnalysisTool {
                 this.analysisResults.componentDirectivesCount > 0 &&
                 this.analysisResults.rootScope == false &&
                 this.analysisResults.compile == false) {
-                    recommendation = "You are ready to use ngUpgrade.";
-                    if(this.analysisResults.angularElement == true) {
-                        recommendation += "Continue using Angular Elements for components.";
-                    } else if (this.analysisResults.uiRouter == true) {
-                        recommendation += "Use the hybrid ui-router in addition.";
-                    } else if (this.analysisResults.angularjsRouter) {
-                        recommendation += "Use the hyrbid AngularJS and Angular router in addition.";
-                    }
+                recommendation = "You are ready to use ngUpgrade.";
+                if (this.analysisResults.angularElement == true) {
+                    recommendation += "Continue using Angular Elements for components.";
+                } else if (this.analysisResults.uiRouter == true) {
+                    recommendation += "Use the hybrid ui-router in addition.";
+                } else if (this.analysisResults.angularjsRouter) {
+                    recommendation += "Use the hyrbid AngularJS and Angular router in addition.";
+                }
             } else {
                 console.log(this.analysisResults.preparationReport + "\n");
             }
@@ -107,7 +112,7 @@ export class AnalysisTool {
      * Attaches current file to next file to produce correct directory and traverse down the tree.
      */
     runAnalysisTests(path: string) {
-        //console.log("------>Descending into " + path);
+        console.log("------>Descending into " + path);
         const list = fs.readdirSync(path);
         let currentFilePath: string = "";
         let fileData: string = "";
@@ -121,20 +126,50 @@ export class AnalysisTool {
             (filename: string, data: string) => this.checkFileForComponent(filename, data),
         ];
         for (let file of list) {
-            //console.log(file);
+            console.log(file);
             currentFilePath = path + "/" + file;
-            if (!fs.statSync(currentFilePath).isDirectory()) {
-                if (file.substr(-3) === '.js' || file.substr(-3) === '.ts' || file.substr(-5) === '.html') {
-                    for (let test of tests) {
-                        test(currentFilePath, fs.readFileSync(currentFilePath, "utf8"));
+            // if (this.fileNotInGitIgnore(currentFilePath)) {
+                if (!fs.statSync(currentFilePath).isDirectory()) {
+                    if (file.substr(-3) === '.js' || file.substr(-3) === '.ts' || file.substr(-5) === '.html') {
+                        for (let test of tests) {
+                            test(currentFilePath, fs.readFileSync(currentFilePath, "utf8"));
+                        }
+                        currentFilePath = file;
                     }
+                } else if(file != "node_modules" && file != ".git"){
+                    this.runAnalysisTests(currentFilePath);
                 }
-            } else if (file != "node_modules") {
-                path = currentFilePath;
-                this.runAnalysisTests(path);
-            }
+            //}
+
         }
     }
+
+    retrieveGitIgnorePaths(path: string): string[] {
+        const list = fs.readdirSync(path);
+        let ignorePaths = ['node_modules', '.git', 'package.json', 'tsconfig.json'];
+        for (let file of list) {
+            if (file == ".gitignore") {
+                ignorePaths = gitignore(path + "/" + file, ['node_modules', '.git', 'package.json', 'tsconfig.json']);
+                break;
+            }
+        }
+
+        for(let ignore of ignorePaths) {
+            console.log(ignore);
+        }
+        return ignorePaths;
+    }
+
+    // fileNotInGitIgnore(filename: string) {
+    //     const ignorePaths = this.retrieveGitIgnorePaths;
+    //     for (let currentPath of ignorePaths) {
+    //         console.log("Filename: " + filename + ", ignorePath: " + currentPath);
+    //         if (filename.match(currentPath)) {
+    //             return false;
+    //         }
+    //     }
+    //     return true;
+    // }
 
     checkFileForRootScope(filename: string, fileData: string) {
         if (fileData.match(/\$rootScope/)) {
@@ -192,14 +227,15 @@ export class AnalysisTool {
      * Only scans files with extensions: js, ts, or html. Does not scan node_modules directory.
      */
     countLinesOfCode(filename: string): Promise<number> {
-        const sloc = require('node-sloc');
         const options = {
             path: filename,
             extensions: ['js', 'ts', 'html'],
-            ignorePaths: ['node_modules'],
+            ignorePaths: ['/node_modules', '/.git', '.DS_Store', '/e2e'],
             ignoreDefault: true
         }
-        var mySloc = sloc(options).then((results: any) => {
+        console.log(nodesloc);
+        const mySloc = nodesloc(options).then((results: any) => {
+            console.log(results.paths, "L: ", results.sloc.sloc, "C: ", results.sloc.comments)
             this.analysisResults.linesOfCode += results.sloc.sloc;
             return results.sloc.sloc;
         });
