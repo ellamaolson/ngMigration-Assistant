@@ -7,6 +7,7 @@
   "author": "Elana Olson",
   "license": "MIT",
   "dependencies": {
+    "glob": "^7.1.2",
     "node-sloc": "^0.1.11",
     "parse-gitignore": "^0.5.1",
     "readline-sync": "^1.4.9",

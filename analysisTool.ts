@@ -14,9 +14,8 @@
 
 import * as fs from 'fs';
 import { default as nodesloc } from 'node-sloc';
-//import {default as gitignore} from 'parse-gitignore';
-//const nodesloc = require('node-sloc');
 const gitignore = require('parse-gitignore');
+const glob = require('glob');
 
 export class AnalysisTool {
 
@@ -47,8 +46,7 @@ export class AnalysisTool {
             console.log(this.recommendation());
             console.log("MaxCodeLimit: " + Math.round(this.analysisResults.maxCodeLimit) + ", SLOC: " + this.analysisResults.linesOfCode + "\n");
         });
-        this.retrieveGitIgnorePaths(path);
-        this.runAnalysisTests(path);
+        this.runAnalysisTests(path, this.retrieveFilesToIgnore(path));
         this.reportGenerator();
     }
 
@@ -111,7 +109,7 @@ export class AnalysisTool {
      * Only scan these extensions to avoid scanning node_modules, .json, yarn lock, .md.
      * Attaches current file to next file to produce correct directory and traverse down the tree.
      */
-    runAnalysisTests(path: string) {
+    runAnalysisTests(path: string, ignorePaths: string[]) {
         console.log("------>Descending into " + path);
         const list = fs.readdirSync(path);
         let currentFilePath: string = "";
@@ -125,10 +123,11 @@ export class AnalysisTool {
             (filename: string, data: string) => this.checkFileForScriptingLanguage(filename, data),
             (filename: string, data: string) => this.checkFileForComponent(filename, data),
         ];
+
         for (let file of list) {
             console.log(file);
             currentFilePath = path + "/" + file;
-            // if (this.fileNotInGitIgnore(currentFilePath)) {
+            if (this.fileNotInGitIgnore(ignorePaths, currentFilePath)) {
                 if (!fs.statSync(currentFilePath).isDirectory()) {
                     if (file.substr(-3) === '.js' || file.substr(-3) === '.ts' || file.substr(-5) === '.html') {
                         for (let test of tests) {
@@ -136,40 +135,58 @@ export class AnalysisTool {
                         }
                         currentFilePath = file;
                     }
-                } else if(file != "node_modules" && file != ".git"){
-                    this.runAnalysisTests(currentFilePath);
+                } else if (file != "node_modules" && file != ".git") {
+                    this.runAnalysisTests(currentFilePath, ignorePaths);
                 }
-            //}
+            }
 
         }
     }
 
-    retrieveGitIgnorePaths(path: string): string[] {
+    fileNotInGitIgnore(ignorePaths: string[], filename: string) {
+        for (let ignore of ignorePaths) {
+            //console.log("Filename: " + filename + ", ignorePath: " + ignore);
+            if (filename.includes(ignore)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    //1. Find .gitignore in their app, parse it with gitignore() to produce ignoreGlobs
+    //2. Search file system for files matching ignoreGlobs to produce badFiles array
+    //3. Create new filesystem array with badFiles removed from it
+    //4. Now run analysis tests on this new, filted filesystem.
+
+    /**
+     * Finds and parses the .gitignore file in your app into an array of ignoreGlobs using parse-gitignore.
+     * Scans filesystem for any matching globs from ignoreGlobs using glob.
+     * Returns all the "bad" files within the file system that matches .gitignore globs.
+     * @param path Fin
+     */
+    retrieveFilesToIgnore(path: string): string[] {
         const list = fs.readdirSync(path);
-        let ignorePaths = ['node_modules', '.git', 'package.json', 'tsconfig.json'];
+        let ignoreGlobs = ['node_modules', '.git', 'package.json', 'tsconfig.json', 'e2e'];
+
         for (let file of list) {
             if (file == ".gitignore") {
-                ignorePaths = gitignore(path + "/" + file, ['node_modules', '.git', 'package.json', 'tsconfig.json']);
+                ignoreGlobs = gitignore(path + "/" + file, ['node_modules', '.git', 'package.json', 'tsconfig.json', 'e2e']);
                 break;
             }
         }
 
-        for(let ignore of ignorePaths) {
-            console.log(ignore);
+        let allBadFiles: string[] = [];
+        for (let ignore of ignoreGlobs) {
+            console.log("Ignore: ", ignore);
+            let badFilesForIgnore = glob.sync(path + ignore);
+            for (let bad of badFilesForIgnore) {
+                console.log("Bad File: " + bad);
+            }
+            allBadFiles.push(badFilesForIgnore);
         }
-        return ignorePaths;
+        console.log("All Bad Files: ", allBadFiles.toString());
+        return allBadFiles;
     }
-
-    // fileNotInGitIgnore(filename: string) {
-    //     const ignorePaths = this.retrieveGitIgnorePaths;
-    //     for (let currentPath of ignorePaths) {
-    //         console.log("Filename: " + filename + ", ignorePath: " + currentPath);
-    //         if (filename.match(currentPath)) {
-    //             return false;
-    //         }
-    //     }
-    //     return true;
-    // }
 
     checkFileForRootScope(filename: string, fileData: string) {
         if (fileData.match(/\$rootScope/)) {
@@ -226,14 +243,25 @@ export class AnalysisTool {
      * Depends on node-sloc to count source lines of code.
      * Only scans files with extensions: js, ts, or html. Does not scan node_modules directory.
      */
-    countLinesOfCode(filename: string): Promise<number> {
+    countLinesOfCode(filepath: string): Promise<number> {
         const options = {
-            path: filename,
+            path: filepath,
             extensions: ['js', 'ts', 'html'],
-            ignorePaths: ['/node_modules', '/.git', '.DS_Store', '/e2e'],
+            ignorePaths: this.retrieveFilesToIgnore(filepath),
             ignoreDefault: true
         }
         console.log(nodesloc);
+
+
+        // const list = fs.readdirSync(filepath);
+        // let currentFilePath;
+        // for (let file of list) {
+        //     currentFilePath = filepath + "/" + file;
+        //     if (this.fileNotInGitIgnore(this.retrieveFilesToIgnore(filepath), currentFilePath)) {
+
+        //     }
+        // }
+
         const mySloc = nodesloc(options).then((results: any) => {
             console.log(results.paths, "L: ", results.sloc.sloc, "C: ", results.sloc.comments)
             this.analysisResults.linesOfCode += results.sloc.sloc;
