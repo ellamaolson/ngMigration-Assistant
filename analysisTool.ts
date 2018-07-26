@@ -49,8 +49,23 @@ export class AnalysisTool {
                 this.analysisDetails.linesOfCode = sourceLines;
                 return this.runAnalysis(path);
             })
-            .then(results => this.runAntiPatternReport())
-            .then(report => this.runRecommendation(report));
+            .catch(err => {
+                console.log("ERROR 1");
+                console.error(err);
+            })
+            .then(() => { return this.runAntiPatternReport() })
+            .catch(err => {
+                console.log("ERROR 2");
+                console.error(err);
+            })
+            .then((report) => { 
+                this.runRecommendation(report);
+                console.log("MaxCodeLimit: " + Math.round(this.analysisDetails.maxCodeLimit) + ", SLOC: " + this.analysisDetails.linesOfCode + "\n"); 
+            })
+            .catch(err => {
+                console.log("ERROR 3");
+                console.error(err);
+            });
         // console.log(this.runRecommendation());
         // console.log("MaxCodeLimit: " + Math.round(this.analysisDetails.maxCodeLimit) + ", SLOC: " + this.analysisDetails.linesOfCode + "\n");
         //});
@@ -62,8 +77,8 @@ export class AnalysisTool {
         // });
 
     }
-    
-    
+
+
     //interface Report {}
 
 
@@ -72,22 +87,27 @@ export class AnalysisTool {
      * Only scans files with extensions: js, ts, or html. Does not scan node_modules directory.
     */
     async countLinesOfCode(filepath: string): Promise<any> {
-        const options = {
-            path: filepath,
-            extensions: ['js', 'ts', 'html'],
-            ignorePaths: ['node_modules']
-        }
+        //return Promise.resolve(mySloc);
+        return new Promise((resolve, reject) => {
+            const options = {
+                path: filepath,
+                extensions: ['js', 'ts', 'html'],
+                ignorePaths: ['node_modules']
+            }
 
-        const mySloc = nodesloc(options).then((results: any) => {
-            console.log("sloc: ", results.sloc.sloc)
-            this.analysisDetails.linesOfCode += results.sloc.sloc;
-            return results.sloc.sloc;
+            let lines: number = 0;
+            const mySloc = nodesloc(options).then((results: any) => {
+                console.log("sloc: ", results.sloc.sloc)
+                lines += results.sloc.sloc;
+                resolve(lines);
+                
+            })
+            .catch((err: any) => {
+                console.error(err);
+                reject(err);
+            });
         });
 
-        return Promise.resolve();
-        // return new Promise((resolve, reject) => {
-        //     resolve(mySloc);
-        // });
     }
 
     /**
@@ -95,7 +115,7 @@ export class AnalysisTool {
      * Only scan these extensions to avoid scanning node_modules, .json, yarn lock, .md.
      * Attaches current file to next file to produce correct directory and traverse down the tree.
      */
-    async runAnalysis(path: string): Promise<any> {
+    private runAnalysis(path: string): Promise<any> {
         console.log("------>Descending into " + path);
         const list = fs.readdirSync(path);
         let currentPath: string = "";
@@ -109,22 +129,13 @@ export class AnalysisTool {
                 continue;
             }
             if (fs.statSync(currentPath).isDirectory()) {
-                promisesINeedResolvedForMeToBeDone.push(this.runAnalysis(fileOrFolder));
-                // try {
-                //     let count = await this.countLinesOfCode(currentPath);
-                //     //console.log("Count: " + count);
-                // } catch (e) {
-                //     console.log("ERROR!");
-                //     console.error(e.message);
-                // }
-                // this.runAnalysis(currentPath);
+                promisesINeedResolvedForMeToBeDone.push(this.runAnalysis(currentPath));
             } else {
                 this.testFile(fileOrFolder, currentPath);
                 currentPath = fileOrFolder;
 
             }
         }
-        //return Promise.resolve(true);
         return Promise.all(promisesINeedResolvedForMeToBeDone);
     }
 
@@ -132,7 +143,7 @@ export class AnalysisTool {
   * Calculates the maxCodeLimit and generates a preparation report. 
   * Reports on rootScope, compile, unit tests, scripting language, and component architecture.
   */
-    private runAntiPatternReport(): Promise<string> {
+    private runAntiPatternReport(): Promise<any> {
         let preparationReport = "\n***Final Report to Prepare for Migration***\nFollow the below guidelines to prepare for migration."
             + " Once you have made the appropriate changes to prepare for migrating, rerun this test and determine your migration path.";
 
@@ -157,9 +168,7 @@ export class AnalysisTool {
             this.analysisDetails.maxCodeLimit *= this.CODE_LIMIT_MULTIPLIER;
         }
 
-        return new Promise((resolve, reject) => {
-            resolve(preparationReport);
-        });
+        return Promise.resolve(preparationReport);
     }
 
     public runRecommendation(preparationReport: string): void {
@@ -246,11 +255,12 @@ export class AnalysisTool {
             }
         }
 
+        console.log("\nIgnore Paths: ")
         let ignorePaths: string[] = [];
         for (let ignore of ignoreGlobs) {
             let filesToIgnore = glob.sync(path + ignore);
-            if(filesToIgnore[0] != null) {
-                console.log("Ignore path: " + ignore + "--> matching files: " + filesToIgnore[0]);
+            if (filesToIgnore[0] != null) {
+                console.log(ignore + "--> " + filesToIgnore[0]);
                 ignorePaths.push(filesToIgnore[0]);
             }
         }
