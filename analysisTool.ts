@@ -14,6 +14,7 @@
 
 import * as fs from 'fs';
 import { default as nodesloc } from 'node-sloc';
+import { resolve } from 'dns';
 const gitignore = require('parse-gitignore');
 const glob = require('glob');
 
@@ -22,7 +23,7 @@ export class AnalysisTool {
     private CODE_LIMIT_MULTIPLIER: number = 1.25;
     private VALUE_NOT_FOUND: number = -1;
 
-    analysisResults = {
+    analysisDetails = {
         maxCodeLimit: 880, // 880 lines considered 1 month's work of coding 
         ignorePaths: [""],
         rootScope: false,
@@ -36,74 +37,57 @@ export class AnalysisTool {
         tsFileCount: 0,
         controllersCount: 0,
         componentDirectivesCount: 0,
-        linesOfCode: 0,
-        preparationReport: "\n***Final Report to Prepare for Migration***\nFollow the below guidelines to prepare for migration."
-            + " Once you have made the appropriate changes to prepare for migrating, rerun this test and determine your migration path."
+        linesOfCode: 0
     };
 
     constructor(path: string) {
         setTimeout(() => { }, 1000);
-        this.retrieveFilesToIgnore(path)
-        this.countLinesOfCode(path).then(() => {
-            console.log(this.recommendation());
-            console.log("MaxCodeLimit: " + Math.round(this.analysisResults.maxCodeLimit) + ", SLOC: " + this.analysisResults.linesOfCode + "\n");
-        });
-        this.runAnalysisTests(path);
-        this.reportGenerator();
-    }
+        this.retrieveFilesFromGitignore(path);
 
-    public recommendation() {
-        let recommendation = '';
-        console.log("\n**Your Recommendation**");
+        this.countLinesOfCode(path)
+            .then(sourceLines => {
+                this.analysisDetails.linesOfCode = sourceLines;
+                return this.runAnalysis(path);
+            })
+            .then(results => this.runAntiPatternReport())
+            .then(report => this.runRecommendation(report));
+        // console.log(this.runRecommendation());
+        // console.log("MaxCodeLimit: " + Math.round(this.analysisDetails.maxCodeLimit) + ", SLOC: " + this.analysisDetails.linesOfCode + "\n");
+        //});
+        // this.runAnalysis(path).then(() => {
+        //     console.log("---- Within runAnalysis.then()");
+        //     this.runAntiPatternReport();
+        //     console.log(this.runRecommendation());
+        //     console.log("MaxCodeLimit: " + Math.round(this.analysisDetails.maxCodeLimit) + ", SLOC: " + this.analysisDetails.linesOfCode + "\n");
+        // });
 
-        if (this.analysisResults.maxCodeLimit >= this.analysisResults.linesOfCode) {
-            recommendation = "Rewrite your app from scratch as an Angular application.";
-        } else {
-            if (this.analysisResults.tsFileCount > 0 &&
-                this.analysisResults.componentDirectivesCount > 0 &&
-                this.analysisResults.rootScope == false &&
-                this.analysisResults.compile == false) {
-                recommendation = "You are ready to use ngUpgrade.";
-                if (this.analysisResults.angularElement == true) {
-                    recommendation += "Continue using Angular Elements for components.";
-                } else if (this.analysisResults.uiRouter == true) {
-                    recommendation += "Use the hybrid ui-router in addition.";
-                } else if (this.analysisResults.angularjsRouter) {
-                    recommendation += "Use the hyrbid AngularJS and Angular router in addition.";
-                }
-            } else {
-                console.log(this.analysisResults.preparationReport + "\n");
-            }
-        }
-        return recommendation;
     }
+    
+    
+    //interface Report {}
+
 
     /**
-     * Calculates the maxCodeLimit and generates a preparation report. 
-     * Reports on rootScope, compile, unit tests, scripting language, and component architecture.
-     */
-    private reportGenerator() {
-        if (this.analysisResults.rootScope) {
-            this.analysisResults.preparationReport += "\n   * App contains $rootScope, must refactor rootScope into services.";
-            this.analysisResults.maxCodeLimit *= this.CODE_LIMIT_MULTIPLIER;
+    * Depends on node-sloc to count source lines of code.
+     * Only scans files with extensions: js, ts, or html. Does not scan node_modules directory.
+    */
+    async countLinesOfCode(filepath: string): Promise<any> {
+        const options = {
+            path: filepath,
+            extensions: ['js', 'ts', 'html'],
+            ignorePaths: ['node_modules']
         }
-        if (this.analysisResults.compile) {
-            this.analysisResults.preparationReport += "\n   * App contains $compile, must rewrite compile to eliminate dynamic feature of templates.";
-            this.analysisResults.maxCodeLimit *= this.CODE_LIMIT_MULTIPLIER;
-        }
-        if (!this.analysisResults.hasUnitTest) {
-            this.analysisResults.preparationReport += "\n   * App does not contain unit tests, must write unit tests.";
-            this.analysisResults.maxCodeLimit *= this.CODE_LIMIT_MULTIPLIER;
-        }
-        if (this.analysisResults.jsFileCount > 0) {
-            this.analysisResults.preparationReport += "\n   * App contains " + this.analysisResults.jsFileCount + " JavaScript files that need to be converted to TypeScript.";
-            this.analysisResults.maxCodeLimit *= this.CODE_LIMIT_MULTIPLIER;
-        }
-        if (this.analysisResults.controllersCount > 0) {
-            this.analysisResults.preparationReport += "\n   * App contains " + this.analysisResults.controllersCount + " controllers that need to be converted to component directives.";
-            this.analysisResults.maxCodeLimit *= this.CODE_LIMIT_MULTIPLIER;
-        }
-        return this.analysisResults.preparationReport;
+
+        const mySloc = nodesloc(options).then((results: any) => {
+            console.log("sloc: ", results.sloc.sloc)
+            this.analysisDetails.linesOfCode += results.sloc.sloc;
+            return results.sloc.sloc;
+        });
+
+        return Promise.resolve();
+        // return new Promise((resolve, reject) => {
+        //     resolve(mySloc);
+        // });
     }
 
     /**
@@ -111,11 +95,100 @@ export class AnalysisTool {
      * Only scan these extensions to avoid scanning node_modules, .json, yarn lock, .md.
      * Attaches current file to next file to produce correct directory and traverse down the tree.
      */
-    runAnalysisTests(path: string) {
+    async runAnalysis(path: string): Promise<any> {
         console.log("------>Descending into " + path);
         const list = fs.readdirSync(path);
-        let currentFilePath: string = "";
-        let fileData: string = "";
+        let currentPath: string = "";
+        const promisesINeedResolvedForMeToBeDone = [];
+
+        for (let fileOrFolder of list) {
+            console.log(fileOrFolder);
+            currentPath = path + "/" + fileOrFolder;
+
+            if (this.isIgnore(currentPath)) {
+                continue;
+            }
+            if (fs.statSync(currentPath).isDirectory()) {
+                promisesINeedResolvedForMeToBeDone.push(this.runAnalysis(fileOrFolder));
+                // try {
+                //     let count = await this.countLinesOfCode(currentPath);
+                //     //console.log("Count: " + count);
+                // } catch (e) {
+                //     console.log("ERROR!");
+                //     console.error(e.message);
+                // }
+                // this.runAnalysis(currentPath);
+            } else {
+                this.testFile(fileOrFolder, currentPath);
+                currentPath = fileOrFolder;
+
+            }
+        }
+        //return Promise.resolve(true);
+        return Promise.all(promisesINeedResolvedForMeToBeDone);
+    }
+
+    /**
+  * Calculates the maxCodeLimit and generates a preparation report. 
+  * Reports on rootScope, compile, unit tests, scripting language, and component architecture.
+  */
+    private runAntiPatternReport(): Promise<string> {
+        let preparationReport = "\n***Final Report to Prepare for Migration***\nFollow the below guidelines to prepare for migration."
+            + " Once you have made the appropriate changes to prepare for migrating, rerun this test and determine your migration path.";
+
+        if (this.analysisDetails.rootScope) {
+            preparationReport += "\n   * App contains $rootScope, must refactor rootScope into services.";
+            this.analysisDetails.maxCodeLimit *= this.CODE_LIMIT_MULTIPLIER;
+        }
+        if (this.analysisDetails.compile) {
+            preparationReport += "\n   * App contains $compile, must rewrite compile to eliminate dynamic feature of templates.";
+            this.analysisDetails.maxCodeLimit *= this.CODE_LIMIT_MULTIPLIER;
+        }
+        if (!this.analysisDetails.hasUnitTest) {
+            preparationReport += "\n   * App does not contain unit tests, must write unit tests.";
+            this.analysisDetails.maxCodeLimit *= this.CODE_LIMIT_MULTIPLIER;
+        }
+        if (this.analysisDetails.jsFileCount > 0) {
+            preparationReport += "\n   * App contains " + this.analysisDetails.jsFileCount + " JavaScript files that need to be converted to TypeScript.";
+            this.analysisDetails.maxCodeLimit *= this.CODE_LIMIT_MULTIPLIER;
+        }
+        if (this.analysisDetails.controllersCount > 0) {
+            preparationReport += "\n   * App contains " + this.analysisDetails.controllersCount + " controllers that need to be converted to component directives.";
+            this.analysisDetails.maxCodeLimit *= this.CODE_LIMIT_MULTIPLIER;
+        }
+
+        return new Promise((resolve, reject) => {
+            resolve(preparationReport);
+        });
+    }
+
+    public runRecommendation(preparationReport: string): void {
+        let recommendation = '';
+        console.log("\n**Your Recommendation**");
+
+        if (this.analysisDetails.maxCodeLimit >= this.analysisDetails.linesOfCode) {
+            recommendation = "Rewrite your app from scratch as an Angular application.";
+        } else {
+            if (this.analysisDetails.tsFileCount > 0 &&
+                this.analysisDetails.componentDirectivesCount > 0 &&
+                this.analysisDetails.rootScope == false &&
+                this.analysisDetails.compile == false) {
+                recommendation = "You are ready to use ngUpgrade.";
+                if (this.analysisDetails.angularElement == true) {
+                    recommendation += "Continue using Angular Elements for components.";
+                } else if (this.analysisDetails.uiRouter == true) {
+                    recommendation += "Use the hybrid ui-router in addition.";
+                } else if (this.analysisDetails.angularjsRouter) {
+                    recommendation += "Use the hyrbid AngularJS and Angular router in addition.";
+                }
+            } else {
+                console.log(preparationReport + "\n");
+            }
+        }
+        console.log(recommendation);
+    }
+
+    testFile(file: string, currentPath: string) {
         let tests = [
             (filename: string, data: string) => this.checkFileForRootScope(filename, data),
             (filename: string, data: string) => this.checkFileForAngularElement(filename, data),
@@ -126,24 +199,26 @@ export class AnalysisTool {
             (filename: string, data: string) => this.checkFileForComponent(filename, data),
         ];
 
-        for (let file of list) {
-            console.log(file);
-            currentFilePath = path + "/" + file;
-            if (this.fileNotInGitIgnore(currentFilePath)) {
-                if (!fs.statSync(currentFilePath).isDirectory()) {
-                    if (file.substr(-3) === '.js' || file.substr(-3) === '.ts' || file.substr(-5) === '.html') {
-                        for (let test of tests) {
-                            test(currentFilePath, fs.readFileSync(currentFilePath, "utf8"));
-                        }
-                        currentFilePath = file;
-                    }
-                } else  {
-                    //if (file != "node_modules" && file != ".git")
-                    this.runAnalysisTests(currentFilePath);
-                }
+        if (file.substr(-3) === '.js' || file.substr(-3) === '.ts' || file.substr(-5) === '.html') {
+            for (let test of tests) {
+                test(currentPath, fs.readFileSync(currentPath, "utf8"));
             }
-
         }
+    }
+
+    /**
+     * Checks is current filepath is to be ignored.
+     * @param ignorePaths 
+     * @param filename 
+     */
+    isIgnore(filename: string) {
+        for (let ignore of this.analysisDetails.ignorePaths) {
+            if (filename == ignore) {
+                console.log("    Ignore this file: " + filename);
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -152,120 +227,86 @@ export class AnalysisTool {
      * Returns all the "bad" files within the file system that matches .gitignore globs.
      * @param path 
      */
-    retrieveFilesToIgnore(path: string) {
+    retrieveFilesFromGitignore(path: string) {
         const list = fs.readdirSync(path);
-        let ignoreGlobs = ['node_modules', '.git', 'package.json', 'tsconfig.json', 'e2e'];
+        let defaultIgnoreGlobs = [
+            'node_modules', 'node_modules/**', '**/node_modules', '**/node_modules/**',
+            '.git', '.git/**', '**/.git', '**/.git/**',
+            'package.json', 'package.json/**', '**/package.json', '**/package.json/**',
+            'tsconfig.json', 'tsconfig.json/**', '**/tsconfig.json', '**/tsconfig.json/**',
+            'e2e', 'e2e/**', '**/e2e', '**/e2e/**'
+        ];
+
+        let ignoreGlobs = defaultIgnoreGlobs;
 
         for (let file of list) {
             if (file == ".gitignore") {
-                ignoreGlobs = gitignore(path + "/" + file, ['node_modules', '.git', 'package.json', 'tsconfig.json', 'e2e']);
+                ignoreGlobs = gitignore(path + "/" + file, defaultIgnoreGlobs);
                 break;
             }
         }
 
         let ignorePaths: string[] = [];
         for (let ignore of ignoreGlobs) {
-            let badFilesForIgnore = glob.sync(path + ignore);
-            console.log("Ignore path: " + ignore + "--> matching files: " + badFilesForIgnore[0]);
-            ignorePaths.push( badFilesForIgnore[0]);                 
-        }
-        this.analysisResults.ignorePaths = ignorePaths;
-    }
-
-    /**
-     * Checks is current filepath is to be ignored.
-     * @param ignorePaths 
-     * @param filename 
-     */
-    fileNotInGitIgnore(filename: string) {
-        for (let ignore of this.analysisResults.ignorePaths) {
-            if (filename == ignore) {
-                console.log("--->Ignores this file: " + filename);
-                return false;
+            let filesToIgnore = glob.sync(path + ignore);
+            if(filesToIgnore[0] != null) {
+                console.log("Ignore path: " + ignore + "--> matching files: " + filesToIgnore[0]);
+                ignorePaths.push(filesToIgnore[0]);
             }
         }
-        return true;
+        this.analysisDetails.ignorePaths = ignorePaths;
     }
+
+    // Methods testfile() calls - - - - - - - - - - - - - - - - - - - - - - 
 
     checkFileForRootScope(filename: string, fileData: string) {
         if (fileData.match(/\$rootScope/)) {
-            this.analysisResults.rootScope = true;
+            this.analysisDetails.rootScope = true;
         }
     }
 
     checkFileForAngularElement(filename: string, fileData: string) {
         if (fileData.match(/NgElementConstructor/)) {
-            this.analysisResults.angularElement = true;
+            this.analysisDetails.angularElement = true;
         }
     }
 
     checkFileForRouter(filename: string, fileData: string) {
         if (fileData.match(/['"]ui\.router['"]/)) {
-            this.analysisResults.uiRouter = true;
+            this.analysisDetails.uiRouter = true;
         } else if (fileData.match(/['"]ngRoute['"]/)) {
-            this.analysisResults.angularjsRouter = true;
+            this.analysisDetails.angularjsRouter = true;
         } else if (fileData.match(/['"]\@angular\/router['"]/)) {
-            this.analysisResults.angularRouter = true;
+            this.analysisDetails.angularRouter = true;
         }
     }
 
     checkFileForUnitTests(filename: string, fileData: string) {
         if (filename.substr(-7, 4) === 'spec') {
-            this.analysisResults.hasUnitTest = true;
+            this.analysisDetails.hasUnitTest = true;
         }
     }
 
     checkFileForCompile(filename: string, fileData: string) {
         if (fileData.match(/compile\(/)) {
-            this.analysisResults.compile = true;
+            this.analysisDetails.compile = true;
         }
     }
 
     checkFileForScriptingLanguage(filename: string, fileData: string) {
         if (filename.substr(-3) === '.js') {
-            this.analysisResults.jsFileCount++;
+            this.analysisDetails.jsFileCount++;
         } else if (filename.substr(-3) === ".ts") {
-            this.analysisResults.tsFileCount++;
+            this.analysisDetails.tsFileCount++;
         }
     }
 
     checkFileForComponent(filename: string, fileData: string) {
         if (fileData.match(/\.controller\(/)) {
-            this.analysisResults.controllersCount++;
+            this.analysisDetails.controllersCount++;
         }
         if (fileData.match(/.component\(/)) {
-            this.analysisResults.componentDirectivesCount++;
+            this.analysisDetails.componentDirectivesCount++;
         }
-    }
-
-    /**
-     * Depends on node-sloc to count source lines of code.
-     * Only scans files with extensions: js, ts, or html. Does not scan node_modules directory.
-     */
-    countLinesOfCode(filepath: string): Promise<number> {
-        const options = {
-            path: filepath,
-            extensions: ['js', 'ts', 'html'],
-            ignorePaths: this.retrieveFilesToIgnore(filepath),
-            ignoreDefault: true
-        }
-        console.log(nodesloc);
-
-
-        // const list = fs.readdirSync(filepath);
-        // let currentFilePath;
-        // for (let file of list) {
-        //     currentFilePath = filepath + "/" + file;
-        //     if (this.fileNotInGitIgnore(this.retrieveFilesToIgnore(filepath), currentFilePath)) {
-
-        //     }
-        // }
-
-        const mySloc = nodesloc(options).then((results: any) => {
-            console.log(results.paths, "L: ", results.sloc.sloc, "C: ", results.sloc.comments)
-            this.analysisResults.linesOfCode += results.sloc.sloc;
-            return results.sloc.sloc;
-        });
-        return mySloc;
     }
 }
