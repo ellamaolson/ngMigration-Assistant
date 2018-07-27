@@ -17,6 +17,8 @@ import { default as nodesloc } from 'node-sloc';
 import { resolve } from 'dns';
 const gitignore = require('parse-gitignore');
 const glob = require('glob');
+const minimatch = require('minimatch');
+const { execSync } = require('child_process');
 
 export class AnalysisTool {
 
@@ -25,6 +27,7 @@ export class AnalysisTool {
 
     analysisDetails = {
         maxCodeLimit: 880, // 880 lines considered 1 month's work of coding 
+        ignoreGlobs: [""],
         ignorePaths: [""],
         rootScope: false,
         angularElement: false,
@@ -42,72 +45,132 @@ export class AnalysisTool {
 
     constructor(path: string) {
         setTimeout(() => { }, 1000);
-        this.retrieveFilesFromGitignore(path);
-
+        this.getGlobsFromGitignore(path);
+        this.buildPathIgnoringGlobs(path);
         this.countLinesOfCode(path)
             .then(sourceLines => {
                 this.analysisDetails.linesOfCode = sourceLines;
                 return this.runAnalysis(path);
             })
             .catch(err => {
-                console.log("ERROR 1");
-                console.error(err);
+                console.error("Error 1", err);
             })
-            .then(() => { return this.runAntiPatternReport() })
+            .then(() => {
+                return this.runAntiPatternReport()
+            })
             .catch(err => {
-                console.log("ERROR 2");
-                console.error(err);
+                console.error("Error 2", err);
             })
-            .then((report) => { 
+            .then(report => {
                 this.runRecommendation(report);
-                console.log("MaxCodeLimit: " + Math.round(this.analysisDetails.maxCodeLimit) + ", SLOC: " + this.analysisDetails.linesOfCode + "\n"); 
+                console.log("MaxCodeLimit: " + Math.round(this.analysisDetails.maxCodeLimit) + ", SLOC: " + this.analysisDetails.linesOfCode + "\n");
             })
             .catch(err => {
-                console.log("ERROR 3");
-                console.error(err);
+                console.error("Error 3", err);
             });
-        // console.log(this.runRecommendation());
-        // console.log("MaxCodeLimit: " + Math.round(this.analysisDetails.maxCodeLimit) + ", SLOC: " + this.analysisDetails.linesOfCode + "\n");
-        //});
-        // this.runAnalysis(path).then(() => {
-        //     console.log("---- Within runAnalysis.then()");
-        //     this.runAntiPatternReport();
-        //     console.log(this.runRecommendation());
-        //     console.log("MaxCodeLimit: " + Math.round(this.analysisDetails.maxCodeLimit) + ", SLOC: " + this.analysisDetails.linesOfCode + "\n");
-        // });
-
     }
 
+    /**
+     * Finds and parses the .gitignore file in your app into an array of ignoreGlobs using parse-gitignore.
+     * Scans filesystem for any matching globs from ignoreGlobs using glob.
+     * Returns all paths to ignore.
+     * @param path 
+     */
+    getGlobsFromGitignore(path: string) {
+        let defaultIgnoreGlobs = [
+            'node_modules', 'node_modules/**', '**/node_modules', '**/node_modules/**',
+            '.git', '.git/**', '**/.git', '**/.git/**',
+            'package.json', 'package.json/**', '**/package.json', '**/package.json/**',
+            'tsconfig.json', 'tsconfig.json/**', '**/tsconfig.json', '**/tsconfig.json/**',
+            'e2e', 'e2e/**', '**/e2e', '**/e2e/**'
+        ];
+        this.analysisDetails.ignoreGlobs = [...gitignore(path + "/.gitignore"), ...defaultIgnoreGlobs];
+        console.log("GLOBS: ", this.analysisDetails.ignoreGlobs);
+    }
 
-    //interface Report {}
+    buildPathIgnoringGlobs(path: string): boolean {
 
+        //1
+        // process.chdir('/tmp');
+        let files = execSync("cd \"" + path + "\" && git ls-tree -r master --name-only").split("\n");
+
+
+        //let filesWithoutIgnores = glob.sync("**", {ignore: this.analysisDetails.ignoreGlobs, cwd: path});
+        console.log("\n\nARRAY ", files);
+        return true;
+
+        //2
+        // for(let thisGlob of this.analysisDetails.ignoreGlobs) {
+        //     if(minimatch(fileOrFolder, thisGlob)) {
+        //         console.log("Match: " + thisGlob + " --> " + fileOrFolder + " = " + minimatch(fileOrFolder, thisGlob));
+        //         return true;
+        //     }
+        // }
+        // return false;
+
+        //3
+        // //console.log("\nIgnore Paths: ")
+        // let ignorePaths: string[] = [];
+        // for (let ignore of this.analysisDetails.ignoreGlobs) {
+        //     let filesToIgnore = glob.sync(ignore, { cwd: fileOrFolder });
+        //     for (let file of filesToIgnore) {
+        //         //console.log(ignore + " --> ", path + "/" + file);
+        //         ignorePaths.push(fileOrFolder + "/" + file);
+        //     }
+
+        // }
+        // this.analysisDetails.ignorePaths = ignorePaths;
+        // //console.log(this.analysisDetails.ignorePaths);
+    }
+
+    // /**
+    //  * Checks is current filepath is to be ignored.
+    //  * @param ignorePaths 
+    //  * @param filename 
+    //  */
+    // isIgnore(filename: string) {
+    //     for (let ignore of this.analysisDetails.ignorePaths) {
+    //         if (filename == ignore) {
+    //             console.log("    Ignore this file: " + filename);
+    //             return true;
+    //         }
+    //     }
+    //     return false;
+    // }
 
     /**
-    * Depends on node-sloc to count source lines of code.
+     * Depends on node-sloc to count source lines of code (sloc).
      * Only scans files with extensions: js, ts, or html. Does not scan node_modules directory.
+     * Returns a promise that resolves to sloc.
     */
     async countLinesOfCode(filepath: string): Promise<any> {
-        //return Promise.resolve(mySloc);
         return new Promise((resolve, reject) => {
             const options = {
                 path: filepath,
                 extensions: ['js', 'ts', 'html'],
-                ignorePaths: ['node_modules']
+                ignorePaths: ['node_modules'],
+                ignoreDefaut: false,
             }
 
             let lines: number = 0;
-            const mySloc = nodesloc(options).then((results: any) => {
-                console.log("sloc: ", results.sloc.sloc)
-                lines += results.sloc.sloc;
-                resolve(lines);
-                
-            })
-            .catch((err: any) => {
-                console.error(err);
-                reject(err);
-            });
+            const mySloc = nodesloc(options)
+                .then((results: any) => {
+                    lines += results.sloc.sloc;
+                    resolve(lines);
+                })
+                .catch((err: any) => {
+                    console.error(err);
+                    reject(err);
+                });
         });
 
+    }
+
+    isIgnoreFileOrFolder(fileOrFolder: string): boolean {
+        if(fileOrFolder.includes("node_modules") || fileOrFolder.includes(".git") || fileOrFolder.includes("package.json")) {
+            return true;
+        } 
+        return false;
     }
 
     /**
@@ -125,11 +188,18 @@ export class AnalysisTool {
             console.log(fileOrFolder);
             currentPath = path + "/" + fileOrFolder;
 
-            if (this.isIgnore(currentPath)) {
+            // if (this.isIgnore(currentPath)) {
+            //     continue;
+            // }
+
+            if(this.isIgnoreFileOrFolder(currentPath)) {
                 continue;
             }
+
             if (fs.statSync(currentPath).isDirectory()) {
                 promisesINeedResolvedForMeToBeDone.push(this.runAnalysis(currentPath));
+                if (fileOrFolder != "node_modules") {
+                }
             } else {
                 this.testFile(fileOrFolder, currentPath);
                 currentPath = fileOrFolder;
@@ -214,60 +284,6 @@ export class AnalysisTool {
             }
         }
     }
-
-    /**
-     * Checks is current filepath is to be ignored.
-     * @param ignorePaths 
-     * @param filename 
-     */
-    isIgnore(filename: string) {
-        for (let ignore of this.analysisDetails.ignorePaths) {
-            if (filename == ignore) {
-                console.log("    Ignore this file: " + filename);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Finds and parses the .gitignore file in your app into an array of ignoreGlobs using parse-gitignore.
-     * Scans filesystem for any matching globs from ignoreGlobs using glob.
-     * Returns all the "bad" files within the file system that matches .gitignore globs.
-     * @param path 
-     */
-    retrieveFilesFromGitignore(path: string) {
-        const list = fs.readdirSync(path);
-        let defaultIgnoreGlobs = [
-            'node_modules', 'node_modules/**', '**/node_modules', '**/node_modules/**',
-            '.git', '.git/**', '**/.git', '**/.git/**',
-            'package.json', 'package.json/**', '**/package.json', '**/package.json/**',
-            'tsconfig.json', 'tsconfig.json/**', '**/tsconfig.json', '**/tsconfig.json/**',
-            'e2e', 'e2e/**', '**/e2e', '**/e2e/**'
-        ];
-
-        let ignoreGlobs = defaultIgnoreGlobs;
-
-        for (let file of list) {
-            if (file == ".gitignore") {
-                ignoreGlobs = gitignore(path + "/" + file, defaultIgnoreGlobs);
-                break;
-            }
-        }
-
-        console.log("\nIgnore Paths: ")
-        let ignorePaths: string[] = [];
-        for (let ignore of ignoreGlobs) {
-            let filesToIgnore = glob.sync(path + ignore);
-            if (filesToIgnore[0] != null) {
-                console.log(ignore + "--> " + filesToIgnore[0]);
-                ignorePaths.push(filesToIgnore[0]);
-            }
-        }
-        this.analysisDetails.ignorePaths = ignorePaths;
-    }
-
-    // Methods testfile() calls - - - - - - - - - - - - - - - - - - - - - - 
 
     checkFileForRootScope(filename: string, fileData: string) {
         if (fileData.match(/\$rootScope/)) {
