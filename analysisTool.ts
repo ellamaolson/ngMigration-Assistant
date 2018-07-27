@@ -27,23 +27,29 @@ export class AnalysisTool {
 
     analysisDetails = {
         maxCodeLimit: 880, // 880 lines considered 1 month's work of coding 
-        ignorePaths: [""],
-        ignoreGlobs: [""],
         angularElement: false,
         rootScope: false,
+        compile: false,
         uiRouter: false,
         angularjsRouter: false,
         angularRouter: false,
         hasUnitTest: false,
-        compile: false,
         jsFileCount: 0,
         tsFileCount: 0,
         controllersCount: 0,
         componentDirectivesCount: 0,
-        linesOfCode: 0
+        linesOfCode: 0,
+        ignorePaths: [""],
+        ignoreGlobs: [""],
+        mapOfFilesToConvert: new Map()
     };
 
     constructor(path: string) {
+
+        this.analysisDetails.mapOfFilesToConvert = new Map<String, Array<String>>();
+        this.pushValueOnKey("banana", "llama");
+        this.pushValueOnKey("banana", "george");
+
         setTimeout(() => { }, 1000);
         this.getGlobsFromGitignore(path);
         this.countLinesOfCode(path, this.buildPathIgnoringGlobs(path))
@@ -90,26 +96,26 @@ export class AnalysisTool {
     }
 
     /**
-     * Builds a new filesystem without the ignored files.
-     * returns an array of filesnames
+     * Builds a new filesystem without the ignored files and
+     * returns an array of filesnames.
      */
     buildPathIgnoringGlobs(path: string) {
         let filesWithoutIgnores = glob.sync("**", { ignore: this.analysisDetails.ignoreGlobs, cwd: path });
         return filesWithoutIgnores;
     }
 
-    /**
-     * DO NOT DELETE
-     * This scans only git repos, asks git for a list of files to check from the .gitignore file within the given directory.
-     * Uses grep to ignore the defaultIgnoreGlobs. 
-        buildPathIgnoringGlobs(path: string) {
-            exec("cd \"" + path + "\" && git ls-tree -r master --name-only | egrep -v \".*(node_modules|e2e|.git|package.json|tsconfig.json).*\"", function(error: string, data: string){
-                let a = data.split("\n");
-                a.pop();
-                console.log(a);
-            });
-        }
-    */
+
+    // //DO NOT DELETE
+    // //This scans only git repos, asks git for a list of files to check from the .gitignore file within the given directory.
+    // //Uses grep to ignore the defaultIgnoreGlobs. 
+    // buildPathIgnoringGlobs(path: string) {
+    //     exec("cd \"" + path + "\" && git ls-tree -r master --name-only | egrep -v \".*(node_modules|e2e|.git|package.json|tsconfig.json).*\"", function (error: string, data: string) {
+    //         let a = data.split("\n");
+    //         a.pop();
+    //         console.log(a);
+    //     });
+    // }
+
 
     /**
      * Depends on node-sloc to count source lines of code (sloc).
@@ -196,6 +202,13 @@ export class AnalysisTool {
             this.analysisDetails.maxCodeLimit *= this.CODE_LIMIT_MULTIPLIER;
         }
 
+        preparationReport += "\n\nSee the below files to find where you need to make corrections."
+            + " The files will point to a list of things needing conversion before upgrading.";
+
+        for (let key of this.analysisDetails.mapOfFilesToConvert.keys()) {
+            preparationReport += "\n" + key + " --> Contains: " + this.analysisDetails.mapOfFilesToConvert.get(key);
+        }
+
         return Promise.resolve(preparationReport);
     }
 
@@ -205,12 +218,14 @@ export class AnalysisTool {
 
         if (this.analysisDetails.maxCodeLimit >= this.analysisDetails.linesOfCode) {
             recommendation = "Rewrite your app from scratch as an Angular application.";
+            console.log(preparationReport + "\n");
         } else {
             if (this.analysisDetails.tsFileCount > 0 &&
                 this.analysisDetails.componentDirectivesCount > 0 &&
                 this.analysisDetails.rootScope == false &&
                 this.analysisDetails.compile == false) {
                 recommendation = "You are ready to use ngUpgrade.";
+
                 if (this.analysisDetails.angularElement == true) {
                     recommendation += "Continue using Angular Elements for components.";
                 } else if (this.analysisDetails.uiRouter == true) {
@@ -218,7 +233,12 @@ export class AnalysisTool {
                 } else if (this.analysisDetails.angularjsRouter) {
                     recommendation += "Use the hyrbid AngularJS and Angular router in addition.";
                 }
+
             } else {
+                recommendation = "Fails ngUpgrade checks.";
+                console.log("Ts count: " + this.analysisDetails.tsFileCount + ", CD count: "
+                    + this.analysisDetails.componentDirectivesCount + ", rootscope: " + this.analysisDetails.rootScope
+                    + ", compile: " + this.analysisDetails.compile);
                 console.log(preparationReport + "\n");
             }
         }
@@ -228,10 +248,10 @@ export class AnalysisTool {
     testFile(currentPath: string) {
         let tests = [
             (filename: string, data: string) => this.checkFileForRootScope(filename, data),
+            (filename: string, data: string) => this.checkFileForCompile(filename, data),
             (filename: string, data: string) => this.checkFileForAngularElement(filename, data),
             (filename: string, data: string) => this.checkFileForRouter(filename, data),
             (filename: string, data: string) => this.checkFileForUnitTests(filename, data),
-            (filename: string, data: string) => this.checkFileForCompile(filename, data),
             (filename: string, data: string) => this.checkFileForScriptingLanguage(filename, data),
             (filename: string, data: string) => this.checkFileForComponent(filename, data),
         ];
@@ -245,6 +265,14 @@ export class AnalysisTool {
     checkFileForRootScope(filename: string, fileData: string) {
         if (fileData.match(/\$rootScope/)) {
             this.analysisDetails.rootScope = true;
+            this.pushValueOnKey(filename, " $rootScope");
+        }
+    }
+
+    checkFileForCompile(filename: string, fileData: string) {
+        if (fileData.match(/compile\(/)) {
+            this.analysisDetails.compile = true;
+            this.pushValueOnKey(filename, " $compile");
         }
     }
 
@@ -270,15 +298,10 @@ export class AnalysisTool {
         }
     }
 
-    checkFileForCompile(filename: string, fileData: string) {
-        if (fileData.match(/compile\(/)) {
-            this.analysisDetails.compile = true;
-        }
-    }
-
     checkFileForScriptingLanguage(filename: string, fileData: string) {
         if (filename.substr(-3) === '.js') {
             this.analysisDetails.jsFileCount++;
+            this.pushValueOnKey(filename, " JavaScript");
         } else if (filename.substr(-3) === ".ts") {
             this.analysisDetails.tsFileCount++;
         }
@@ -287,9 +310,22 @@ export class AnalysisTool {
     checkFileForComponent(filename: string, fileData: string) {
         if (fileData.match(/\.controller\(/)) {
             this.analysisDetails.controllersCount++;
+            this.pushValueOnKey(filename, " .controller");
         }
         if (fileData.match(/.component\(/)) {
             this.analysisDetails.componentDirectivesCount++;
+            this.pushValueOnKey(filename, " .component");
+        }
+    }
+
+    pushValueOnKey(key: string, value: string) {
+        if (this.analysisDetails.mapOfFilesToConvert.has(key)) {
+            let values = this.analysisDetails.mapOfFilesToConvert.get(key);
+            values.push(value);
+            this.analysisDetails.mapOfFilesToConvert.set(key, values);
+        } else {
+            let newValuesArray: string[] = [value];
+            this.analysisDetails.mapOfFilesToConvert.set(key, newValuesArray);
         }
     }
 }
