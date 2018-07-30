@@ -1,5 +1,5 @@
 /**
- * AnalysisTool scans an AngularJS app for certain critera to recommend
+ * ngmigration AnalysisTool scans an AngularJS app for certain critera to recommend
  * a particular migration path to Angular. It employs traversing files,
  * regular expressions, a decision tree algorithm, and final recommendations. 
  */
@@ -306,14 +306,19 @@ export class AnalysisTool {
         if (this.typeOfApplication() == "angular") {
             return "\x1b[34mThis is already an Angular application. You do not need to migrate.\x1b[0m";
         }
+
         if (this.analysisDetails.maxCodeLimit >= this.analysisDetails.linesOfCode) {
+            
             if (this.typeOfApplication() == "hybrid") {
                 recommendation += "\x1b[34mEven though you have already begun making a hybrid application with"
                     + " both AngularJS and Angular, the simplest solution is to rewrite your application from scratch.\n\x1b[0m";
             } else {
                 recommendation += "\x1b[34mThe simplest solution is to rewrite your application from scratch.\n\x1b[0m";
             }
-            recommendation += preparationReport + "\n";
+            //If preparationReport contains actual corrects, include it. 
+            if (this.analysisDetails.mapOfFilesToConvert.size > 0 || !this.analysisDetails.hasUnitTest) {
+                recommendation += preparationReport + "\n";
+            }
         } else {
             if (this.passesngUpgradeRequirements()) {
                 recommendation += "\x1b[34mYou have passed the necessary requirements and can use ngUpgrade as your migration path.\n\x1b[0m";
@@ -332,12 +337,6 @@ export class AnalysisTool {
                     recommendation += "\x1b[34mYour app does not pass the necessary requirements to use ngUpgrade.\n\x1b[0m";
                 }
                 recommendation += preparationReport + "\n";
-                console.log("rootscope: " + this.analysisDetails.rootScope
-                    + ", compile: " + this.analysisDetails.compile
-                    + ", unit test: " + this.analysisDetails.hasUnitTest
-                    + ", ts count: " + this.analysisDetails.tsFileCount
-                    + ", js count: " + this.analysisDetails.jsFileCount
-                    + ", controller count: " + this.analysisDetails.controllersCount);
             }
         }
         return recommendation;
