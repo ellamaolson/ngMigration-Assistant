@@ -1,8 +1,8 @@
 /**
  * ngMigration Assistant scans an AngularJS application and recommends
- * a particular migration path to Angular. It looks for good practices
+ * a particular migration path to take to Angular. It looks for good practices
  * and anti-patterns to help determine which stage in migration the 
- * application is and which migration path to recommend.
+ * application is and which migration path is right for you.
  */
 
 /**
