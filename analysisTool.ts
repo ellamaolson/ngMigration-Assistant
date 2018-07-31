@@ -161,9 +161,7 @@ export class AnalysisTool {
         let currentPath: string = "";
 
         for (let fileOrFolder of this.buildPathIgnoringGlobs(rootpath)) {
-            console.log("F: " + fileOrFolder);
             currentPath = rootpath + "/" + fileOrFolder;
-            console.log("C: " + currentPath);
             this.testFile(currentPath);
         }
     }

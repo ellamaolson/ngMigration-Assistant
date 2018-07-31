@@ -1,14 +1,13 @@
 {
-  "name": "my-migrate-path",
+  "name": "ngMigration-Assitant",
   "version": "0.0.0",
   "description": "An analysis tool to determine which migration path from AngularJS to Angular is right for you. ",
-  "main": "index.ts",
-  "repository": "https://github.com/ellamaolson/my-migration-path.git",
+  "main": "main.ts",
+  "repository": "https://github.com/ellamaolson/ngMigration-Assistant.git",
   "author": "Elana Olson",
   "license": "MIT",
   "dependencies": {
     "glob": "^7.1.2",
-    "minimatch": "^3.0.4",
     "node-sloc": "^0.1.11",
     "parse-gitignore": "^0.5.1",
     "readline-sync": "^1.4.9",
