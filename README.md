@@ -29,6 +29,7 @@ Runs the analysis on the directory provided and returns a recommendation on whic
 * [node-glob](https://www.npmjs.com/package/glob)
 * [parse-gitignore](https://www.npmjs.com/package/parse-gitignore)
 * [node-sloc](https://www.npmjs.com/package/node-sloc)
+* [readline-sync](https://www.npmjs.com/package/readline-sync)
 
 ## Authors
 
