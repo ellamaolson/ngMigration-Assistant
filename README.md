@@ -5,9 +5,21 @@ Scans an AngularJS application and recommends a particular migration path to tak
 ## Getting Started
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
-#### Installing
+### Installing
 
+#### NPM
+```
+npm install ngmigration-assistant
+cd ngmigration-assistant
+npm start
+```
 
+#### Yarn
+```
+yarn add ngmigration-assistant
+cd ngmigration-assistant
+yarn start 
+```
 
 ## App Composition
 

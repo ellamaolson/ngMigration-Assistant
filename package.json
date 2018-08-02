@@ -1,7 +1,7 @@
 {
-  "name": "ngmigration-assistant",
+  "name": "ngma",
   "version": "1.0.0",
-  "description": "An analysis tool to determine which migration path from AngularJS to Angular is right for you. ",
+  "description": "Angular Migration Assistant",
   "main": "main.ts",
   "repository": "https://github.com/ellamaolson/ngMigration-Assistant.git",
   "author": "Elana Olson",
@@ -17,7 +17,12 @@
     "typescript": "^2.9.2"
   },
   "scripts": {
-    "start": "export TS_NODE_FILES=true;ts-node-dev main.ts"
+    "start": "export TS_NODE_FILES=true;ts-node-dev main.ts",
+    "build": "tsc -p main.ts",
+    "run": "yarn run"
+  },
+  "bin": {
+    "ngma": "main.ts"
   },
   "devDependencies": {
     "@types/node": "^10.5.2"
