@@ -18,11 +18,11 @@
   },
   "scripts": {
     "start": "export TS_NODE_FILES=true;ts-node-dev main.ts",
-    "build": "tsc -p main.ts",
-    "run": "yarn run"
+    "build": "tsc",
+    "prepare": "build"
   },
   "bin": {
-    "ngma": "main.ts"
+    "ngma": "index.js"
   },
   "devDependencies": {
     "@types/node": "^10.5.2"
