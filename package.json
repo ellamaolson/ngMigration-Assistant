@@ -18,8 +18,7 @@
   },
   "scripts": {
     "start": "export TS_NODE_FILES=true;ts-node-dev main.ts",
-    "build": "tsc",
-    "prepare": "build"
+    "build": "tsc"
   },
   "bin": {
     "ngma": "index.js"
