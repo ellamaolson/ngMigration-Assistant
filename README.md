@@ -6,19 +6,19 @@ Scans an AngularJS application and recommends a particular migration path to tak
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
 ### Installing
+Whether you are using npm or yarn package manager, install ngma globally.
+```
+npm install -g ngma
+```
+```
+yarn global add ngma
+```
 
-#### NPM
-```
-npm install ngmigration-assistant
-cd ngmigration-assistant
-npm start
-```
+### Run the program
 
-#### Yarn
 ```
-yarn add ngmigration-assistant
-cd ngmigration-assistant
-yarn start 
+cd <your-angularjs-project>
+ngma
 ```
 
 ## App Composition
