@@ -8,14 +8,21 @@ const readline = require("readline-sync");
 try {
     let directory = process.argv[2] ? process.argv[2] : process.cwd();
     fs.statSync(directory).isDirectory();
-    console.log("\x1b[1m\x1b[34m%s\x1b[0m", "\nWelcome to the ngMigration Assistant!",
-        "\x1b[1m\x1b[33m＼(^\x1b[31mᴗ\x1b[33m^)／\x1b[0m");
+    console.log("\x1b[1m\x1b[34m%s\x1b[0m", "\nWelcome to ngMigration Assistant!",
+        "\x1b[1m\x1b[33m＼(^\x1b[31mᴗ\x1b[33m^)／\x1b[0m",
+        "\nScanning your files for...\n  * complexity\n  * source lines of code (sloc)"
+        + "\n  * antipatterns\n  * angularjs version\n  * preparation necessary for migration ");
+    delay(1000);
     new AnalysisTool(directory);
-    console.log("\nScanning your files..."
-        + " \x1b[1m\x1b[33m~\x1b[36m(\x1b[32m˘\x1b[35m▾\x1b[32m˘\x1b[36m)\x1b[33m~"
-        + " \x1b[1m\x1b[33m~\x1b[36m(\x1b[32m˘\x1b[35m▾\x1b[32m˘\x1b[36m)\x1b[33m~"
-        + " \x1b[1m\x1b[33m~\x1b[36m(\x1b[32m˘\x1b[35m▾\x1b[32m˘\x1b[36m)\x1b[33m~\x1b[0m");
 } catch (e) {
-    console.log("\x1b[31mYou entered an invalid directory, please try again.\x1b[0m");
+    console.log("\x1b[31mYou entered an invalid directory, please try again.\n\x1b[0m");
 }
 
+function delay(milliseconds: number) {
+    let startTime = new Date().getTime();
+    for (let index = 0; index < 1e7; index++) {
+        if ((new Date().getTime() - startTime) > milliseconds) {
+            break;
+        }
+    }
+}

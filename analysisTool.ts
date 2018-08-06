@@ -63,7 +63,7 @@ export class AnalysisTool {
             })
             .then(report => {
                 console.log(this.runRecommendation(report));
-                console.log("\x1b[32m%s\x1b[0m", "rewriteThreshold: " + Math.round(this.analysisDetails.rewriteThreshold) + ", SLOC: " + this.analysisDetails.linesOfCode + "\n");
+                console.log("rewriteThreshold: " + Math.round(this.analysisDetails.rewriteThreshold) + ", SLOC: " + this.analysisDetails.linesOfCode + "\n");
             })
             .catch(err => {
                 console.error("Error 2: ", err);
@@ -274,33 +274,33 @@ export class AnalysisTool {
     * are appended to the preparation report. Returns a promise that resolves to the preparation report. 
     */
     private runAntiPatternReport(): Promise<any> {
-        let preparationReport = "\x1b[34mCorrect the following:\x1b[0m";
+        let preparationReport = "";
 
         if (this.analysisDetails.rootScope) {
-            preparationReport += "\n   \x1b[34m*\x1b[0m App contains $rootScope, please refactor rootScope into services.";
+            preparationReport += "\n  * App contains $rootScope, please refactor rootScope into services.";
             this.analysisDetails.rewriteThreshold *= this.CODE_LIMIT_MULTIPLIER;
         }
         if (this.analysisDetails.compile) {
-            preparationReport += "\n   \x1b[34m*\x1b[0m App contains $compile, please rewrite compile to eliminate dynamic feature of templates.";
+            preparationReport += "\n  * App contains $compile, please rewrite compile to eliminate dynamic feature of templates.";
             this.analysisDetails.rewriteThreshold *= this.CODE_LIMIT_MULTIPLIER;
         }
         if (!this.analysisDetails.hasUnitTest) {
-            preparationReport += "\n   \x1b[34m*\x1b[0m App does not contain unit tests, please include unit tests.";
+            preparationReport += "\n  * App does not contain unit tests, please include unit tests.";
             this.analysisDetails.rewriteThreshold *= this.CODE_LIMIT_MULTIPLIER;
         }
         if (this.analysisDetails.jsFileCount > 0) {
-            preparationReport += "\n   \x1b[34m*\x1b[0m App contains " + this.analysisDetails.jsFileCount + " JavaScript files that need to be converted to TypeScript.";
+            preparationReport += "\n  * App contains " + this.analysisDetails.jsFileCount + " JavaScript files that need to be converted to TypeScript.";
             this.analysisDetails.rewriteThreshold *= this.CODE_LIMIT_MULTIPLIER;
         }
         if (this.analysisDetails.controllersCount > 0) {
-            preparationReport += "\n   \x1b[34m*\x1b[0m App contains " + this.analysisDetails.controllersCount + " controllers that need to be converted to component directives.";
+            preparationReport += "\n  * App contains " + this.analysisDetails.controllersCount + " controllers that need to be converted to component directives.";
             this.analysisDetails.rewriteThreshold *= this.CODE_LIMIT_MULTIPLIER;
         }
 
         if (this.analysisDetails.mapOfFilesToConvert.size > 0) {
-            preparationReport += "\n\x1b[34mFiles to modify:\x1b[0m";
+            preparationReport += "\nFiles to modify:";
             for (let key of this.analysisDetails.mapOfFilesToConvert.keys()) {
-                preparationReport += "\n   " + key + " \x1b[34m-->\x1b[0m Contains: " + this.analysisDetails.mapOfFilesToConvert.get(key);
+                preparationReport += "\n  " + key + " --> Contains: " + this.analysisDetails.mapOfFilesToConvert.get(key);
             }
         }
         return Promise.resolve(preparationReport);
@@ -316,21 +316,22 @@ export class AnalysisTool {
     public runRecommendation(preparationReport: string): string {
         let recommendation = "\x1b[1m\nYour Recommendation\n\x1b[0m";
         if (this.typeOfApplication() == "angular") {
-            return "\x1b[32mThis is already an Angular application. You do not need to migrate.\x1b[0m";
+            return "\x1b[34mThis is already an Angular application. You do not need to migrate.\n\x1b[0m";
         }
+        //Rewriting from scratch
         if (this.analysisDetails.rewriteThreshold >= this.analysisDetails.linesOfCode) {
             if (this.typeOfApplication() == "hybrid") {
-                recommendation += "\x1b[32mEven though you have already begun making a hybrid application with"
+                recommendation += "\x1b[34mEven though you have already begun making a hybrid application with"
                     + " both AngularJS and Angular, the simplest solution is to rewrite your application from scratch.\n\x1b[0m";
             } else {
-                recommendation += "\x1b[32mThe simplest solution is to rewrite your application from scratch.\n\x1b[0m";
+                recommendation += "\x1b[34mThe simplest solution is to rewrite your application from scratch.\n\x1b[0m";
             }
-            if (this.analysisDetails.mapOfFilesToConvert.size > 0 || !this.analysisDetails.hasUnitTest) {
-                recommendation += preparationReport + "\n";
+            if (!this.analysisDetails.hasUnitTest) {
+                recommendation += "Please include unit tests in your new Angular application.\n";
             }
         } else {
             if (this.passesNgUpgradeRequirements()) {
-                recommendation += "\x1b[32mYou have passed the necessary requirements and can use ngUpgrade as your migration path.\n\x1b[0m";
+                recommendation += "\x1b[34mYou have passed the necessary requirements and can use ngUpgrade as your migration path.\n\x1b[0m";
                 if (this.analysisDetails.angularElement == true) {
                     recommendation += "Continue using Angular Elements for components.";
                 } else if (this.analysisDetails.uiRouter == true) {
@@ -340,10 +341,11 @@ export class AnalysisTool {
                 }
             } else {
                 if (this.typeOfApplication() == "hybrid") {
-                    recommendation += "\x1b[32mEven though you have already begun making a hybrid application with"
-                        + " both AngularJS and Angular, your app does not pass the necessary requirements to use ngUpgrade.\n\x1b[0m";
+                    recommendation += "\x1b[34mEven though you have already begun making a hybrid application with"
+                        + " both AngularJS and Angular, your app does not pass the necessary requirements to use ngUpgrade. " 
+                        + "Please follow these preparation steps before migrating with ngUpgrade.\x1b[0m";
                 } else {
-                    recommendation += "\x1b[32mYour app does not pass the necessary requirements to use ngUpgrade.\n\x1b[0m";
+                    recommendation += "\x1b[34mPlease follow these preparation steps before migrating with ngUpgrade.\x1b[0m";
                 }
                 recommendation += preparationReport + "\n";
             }
