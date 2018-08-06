@@ -3,7 +3,6 @@
 import { AnalysisTool } from './analysisTool';
 import * as fs from 'fs';
 import * as process from 'process';
-const readline = require("readline-sync");
 
 try {
     let directory = process.argv[2] ? process.argv[2] : process.cwd();

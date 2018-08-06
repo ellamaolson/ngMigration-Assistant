@@ -1,12 +1,10 @@
 # ngMigration Assistant
 
-Scans an AngularJS application and recommends a particular migration path to take to Angular. It looks for good practices and anti-patterns to help determine which stage in migration the application is and which migration is right for you.
+ngMigration Assistant is an easy-to-use command line utility that scans an AngularJS application and recommends how to migrate to Angular. 
 
 ![ajs-app-dark-slow](https://user-images.githubusercontent.com/27384475/43745004-7f44ff54-9991-11e8-9c9b-acd0dda042cc.gif)
 
 ## Getting Started
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
-
 ### Installing
 Whether you are using npm or yarn package manager, install ngma globally.
 ```
@@ -25,9 +23,9 @@ ngma <your_angularjs_app>
 
 ## App Composition
 
-###  Class analysisTool
+###  Class: analysisTool
 
-Runs the analysis on the directory provided and returns a recommendation on which migration path to take to Angular. Counts the source lines of code (sloc) of the inputted directory, analyzes the code, and executes an anti-pattern report to instruct the recommendation. 
+Runs the analysis on the provided directory and returns a recommendation on which migration path to take to Angular. It looks at the complexity, source lines of code (sloc), antipatterns, AngularJS version, and preparation necessary for migration. It identifies the files that need to be modified and the specific changes that will prepare the app for upgrading. 
 
 ### Methods
 

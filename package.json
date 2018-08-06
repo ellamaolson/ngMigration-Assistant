@@ -10,7 +10,6 @@
     "glob": "^7.1.2",
     "node-sloc": "^0.1.11",
     "parse-gitignore": "^0.5.1",
-    "readline-sync": "^1.4.9",
     "ts-node": "^7.0.0",
     "ts-node-dev": "^1.0.0-pre.26",
     "tslint": "^5.10.0",
