@@ -2,6 +2,8 @@
 
 Scans an AngularJS application and recommends a particular migration path to take to Angular. It looks for good practices and anti-patterns to help determine which stage in migration the application is and which migration is right for you.
 
+![ajs-app-dark-slow](https://user-images.githubusercontent.com/27384475/43745004-7f44ff54-9991-11e8-9c9b-acd0dda042cc.gif)
+
 ## Getting Started
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
@@ -20,8 +22,6 @@ ngMigration Assistant will scan the current working directory or the input direc
 ```
 ngma <your_angularjs_app>
 ```
-
-![ajs-app-dark-slow](https://user-images.githubusercontent.com/27384475/43745004-7f44ff54-9991-11e8-9c9b-acd0dda042cc.gif)
 
 ## App Composition
 
