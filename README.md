@@ -16,9 +16,9 @@ yarn global add ngma
 
 ### Run the program
 
+ngMigration Assistant will scan the current working directory or the input directory.
 ```
-cd <your-angularjs-project>
-ngma
+ngma <your_angularjs_app>
 ```
 
 ## App Composition
