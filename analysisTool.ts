@@ -35,6 +35,7 @@ export class AnalysisTool {
         hasUnitTest: false,
         usingAngular: false,
         usingAngularJS: false,
+        filesOrFolderCount: 0,
         jsFileCount: 0,
         tsFileCount: 0,
         controllersCount: 0,
@@ -62,6 +63,7 @@ export class AnalysisTool {
                 console.error("Error 1: ", err);
             })
             .then(report => {
+                console.log(this.runAppStatistics());
                 console.log(this.runRecommendation(report));
                 console.log("rewriteThreshold: " + Math.round(this.analysisDetails.rewriteThreshold) + ", SLOC: " + this.analysisDetails.linesOfCode + "\n");
             })
@@ -78,6 +80,7 @@ export class AnalysisTool {
     buildPathIgnoringGlobs(rootpath: string) {
         let ignoreGlobs = this.getGlobsFromGitignore(rootpath);
         let filesWithoutIgnores = glob.sync("**", { ignore: ignoreGlobs, cwd: rootpath });
+        this.analysisDetails.filesOrFolderCount = filesWithoutIgnores.length;
         return filesWithoutIgnores;
     }
 
@@ -306,6 +309,44 @@ export class AnalysisTool {
         return Promise.resolve(preparationReport);
     }
 
+    public runAppStatistics(): string {
+        let report = "\x1b[1m\nApp Statistics\x1b[0m";
+        if (this.analysisDetails.controllersCount > 0
+            || this.analysisDetails.componentDirectivesCount > 0
+            || this.analysisDetails.jsFileCount > 0
+            || this.analysisDetails.tsFileCount > 0) {
+            report += "\n  * complexity: " + this.analysisDetails.controllersCount + " controllers, "
+                + this.analysisDetails.componentDirectivesCount + " component directives, " +
+                + this.analysisDetails.jsFileCount + " JavaScript files, and "
+                + this.analysisDetails.tsFileCount + " Typescript files.";
+        }
+        report += "\n  * sloc: " + this.analysisDetails.linesOfCode + " lines"
+            + "\n  * source files or folders count: " + this.analysisDetails.filesOrFolderCount
+            + "\n  * antipatterns: ";
+        if (this.analysisDetails.rootScope) {
+            report += " $rootScope, ";
+        }
+        if (this.analysisDetails.compile) {
+            report += " $compile, ";
+        }
+        if (!this.analysisDetails.hasUnitTest) {
+            report += " no unit tests, ";
+        }
+        if (this.analysisDetails.jsFileCount > 0) {
+            report += " JavaScript, ";
+        }
+        if (this.analysisDetails.controllersCount > 0) {
+            report += " .controller, ";
+        }
+
+        if (report.endsWith(", ")) {
+            report = report.slice(0, -2);
+        } else if (report.endsWith("  * antipatterns: ")) {
+            report += "N/A";
+        }
+        return report;
+    }
+
     /**
      * Recommendation algorithm that checks type of application (AngularJS, Angular, or 
      * hybrid), checks if sloc is under the rewriteThreshold, and checks if passes the 
@@ -316,7 +357,8 @@ export class AnalysisTool {
     public runRecommendation(preparationReport: string): string {
         let recommendation = "\x1b[1m\nYour Recommendation\n\x1b[0m";
         if (this.typeOfApplication() == "angular") {
-            return "\x1b[34mThis is already an Angular application. You do not need to migrate.\n\x1b[0m";
+            recommendation += "\x1b[34mThis is already an Angular application. You do not need to migrate.\n\x1b[0m";
+            return recommendation;
         }
         //Rewriting from scratch
         if (this.analysisDetails.rewriteThreshold >= this.analysisDetails.linesOfCode) {
@@ -342,7 +384,7 @@ export class AnalysisTool {
             } else {
                 if (this.typeOfApplication() == "hybrid") {
                     recommendation += "\x1b[34mEven though you have already begun making a hybrid application with"
-                        + " both AngularJS and Angular, your app does not pass the necessary requirements to use ngUpgrade. " 
+                        + " both AngularJS and Angular, your app does not pass the necessary requirements to use ngUpgrade. "
                         + "Please follow these preparation steps before migrating with ngUpgrade.\x1b[0m";
                 } else {
                     recommendation += "\x1b[34mPlease follow these preparation steps before migrating with ngUpgrade.\x1b[0m";
