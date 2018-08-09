@@ -39,7 +39,7 @@ export class AnalysisTool {
         jsFileCount: 0,
         tsFileCount: 0,
         controllersCount: 0,
-        componentDirectivesCount: 0,
+        componentCount: 0,
         linesOfCode: 0,
         mapOfFilesToConvert: new Map()
     };
@@ -65,7 +65,7 @@ export class AnalysisTool {
             .then(report => {
                 console.log(this.runAppStatistics());
                 console.log(this.runRecommendation(report));
-                console.log("rewriteThreshold: " + Math.round(this.analysisDetails.rewriteThreshold) + ", SLOC: " + this.analysisDetails.linesOfCode + "\n");
+                console.log("rewriteThreshold: " + Math.round(this.analysisDetails.rewriteThreshold) + ", sloc: " + this.analysisDetails.linesOfCode + "\n");
             })
             .catch(err => {
                 console.error("Error 2: ", err);
@@ -193,16 +193,20 @@ export class AnalysisTool {
     }
 
     checkFileForRootScope(filename: string, fileData: string) {
-        if (fileData.match(/\$rootScope/)) {
-            this.analysisDetails.rootScope = true;
-            this.pushValueOnKey(this.analysisDetails.mapOfFilesToConvert, filename, " $rootScope");
+        if (filename.substr(-7, 4) != 'spec' && !filename.includes('test')) {
+            if (fileData.match(/\$rootScope/)) {
+                this.analysisDetails.rootScope = true;
+                this.pushValueOnKey(this.analysisDetails.mapOfFilesToConvert, filename, " $rootScope");
+            }
         }
     }
 
     checkFileForCompile(filename: string, fileData: string) {
-        if (fileData.match(/compile\(/)) {
-            this.analysisDetails.compile = true;
-            this.pushValueOnKey(this.analysisDetails.mapOfFilesToConvert, filename, " $compile");
+        if (filename.substr(-7, 4) != 'spec' && !filename.includes('test')) {
+            if (fileData.match(/compile\(/)) {
+                this.analysisDetails.compile = true;
+                this.pushValueOnKey(this.analysisDetails.mapOfFilesToConvert, filename, " $compile");
+            }
         }
     }
 
@@ -223,7 +227,7 @@ export class AnalysisTool {
     }
 
     checkFileForUnitTests(filename: string, fileData: string) {
-        if (filename.substr(-7, 4) === 'spec') {
+        if (filename.substr(-7, 4) === 'spec' || filename.includes('test')) {
             this.analysisDetails.hasUnitTest = true;
         }
     }
@@ -252,11 +256,11 @@ export class AnalysisTool {
     checkFileForComponent(filename: string, fileData: string) {
         if (fileData.match(/\.controller\(/)) {
             this.analysisDetails.controllersCount++;
-            this.pushValueOnKey(this.analysisDetails.mapOfFilesToConvert, filename, " .controller");
+            this.pushValueOnKey(this.analysisDetails.mapOfFilesToConvert, filename, " controller");
         }
         if (fileData.match(/.component\(/)) {
-            this.analysisDetails.componentDirectivesCount++;
-            this.pushValueOnKey(this.analysisDetails.mapOfFilesToConvert, filename, " .component");
+            this.analysisDetails.componentCount++;
+            this.pushValueOnKey(this.analysisDetails.mapOfFilesToConvert, filename, " AngularJS component");
         }
     }
 
@@ -292,18 +296,21 @@ export class AnalysisTool {
             this.analysisDetails.rewriteThreshold *= this.CODE_LIMIT_MULTIPLIER;
         }
         if (this.analysisDetails.jsFileCount > 0) {
-            preparationReport += "\n  * App contains " + this.analysisDetails.jsFileCount + " JavaScript files that need to be converted to TypeScript.";
+            preparationReport += "\n  * App contains " + this.analysisDetails.jsFileCount + " JavaScript files that need to be converted to TypeScript."
+                + " To learn more, visit https://angular.io/guide/upgrade#migrating-to-typescript";
             this.analysisDetails.rewriteThreshold *= this.CODE_LIMIT_MULTIPLIER;
         }
         if (this.analysisDetails.controllersCount > 0) {
-            preparationReport += "\n  * App contains " + this.analysisDetails.controllersCount + " controllers that need to be converted to component directives.";
+            preparationReport += "\n  * App contains " + this.analysisDetails.controllersCount
+                + " controllers that need to be converted to AngularJS components. To learn more, visit https://docs.angularjs.org/guide/component";
             this.analysisDetails.rewriteThreshold *= this.CODE_LIMIT_MULTIPLIER;
         }
 
         if (this.analysisDetails.mapOfFilesToConvert.size > 0) {
-            preparationReport += "\nFiles to modify:";
+            preparationReport += "\n\nFiles to modify:";
+            let index = 1;
             for (let key of this.analysisDetails.mapOfFilesToConvert.keys()) {
-                preparationReport += "\n  " + key + " --> Contains: " + this.analysisDetails.mapOfFilesToConvert.get(key);
+                preparationReport += "\n" + index++ + ".  " + key + " --> Contains: " + this.analysisDetails.mapOfFilesToConvert.get(key);
             }
         }
         return Promise.resolve(preparationReport);
@@ -312,17 +319,17 @@ export class AnalysisTool {
     public runAppStatistics(): string {
         let report = "\x1b[1m\nApp Statistics\x1b[0m";
         if (this.analysisDetails.controllersCount > 0
-            || this.analysisDetails.componentDirectivesCount > 0
+            || this.analysisDetails.componentCount > 0
             || this.analysisDetails.jsFileCount > 0
             || this.analysisDetails.tsFileCount > 0) {
-            report += "\n  * complexity: " + this.analysisDetails.controllersCount + " controllers, "
-                + this.analysisDetails.componentDirectivesCount + " component directives, " +
+            report += "\n  * Complexity: " + this.analysisDetails.controllersCount + " controllers, "
+                + this.analysisDetails.componentCount + " AngularJS components, " +
                 + this.analysisDetails.jsFileCount + " JavaScript files, and "
                 + this.analysisDetails.tsFileCount + " Typescript files.";
         }
-        report += "\n  * sloc: " + this.analysisDetails.linesOfCode + " lines"
-            + "\n  * source files or folders count: " + this.analysisDetails.filesOrFolderCount
-            + "\n  * antipatterns: ";
+        report += "\n  * App size: " + this.analysisDetails.linesOfCode + " lines of code, "
+            + this.analysisDetails.filesOrFolderCount + " files and folders"
+            + "\n  * Antipatterns: ";
         if (this.analysisDetails.rootScope) {
             report += " $rootScope, ";
         }
@@ -341,7 +348,7 @@ export class AnalysisTool {
 
         if (report.endsWith(", ")) {
             report = report.slice(0, -2);
-        } else if (report.endsWith("  * antipatterns: ")) {
+        } else if (report.endsWith("  * Antipatterns: ")) {
             report += "N/A";
         }
         return report;

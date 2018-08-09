@@ -9,8 +9,8 @@ try {
     fs.statSync(directory).isDirectory();
     console.log("\x1b[1m\x1b[34m%s\x1b[0m", "\nWelcome to ngMigration Assistant!",
         "\x1b[1m\x1b[33m＼(^\x1b[31mᴗ\x1b[33m^)／\x1b[0m",
-        "\nScanning your files for...\n  * complexity\n  * source lines of code (sloc)"
-        + "\n  * antipatterns\n  * angularjs version\n  * preparation necessary for migration ");
+        "\nScanning your files for...\n  * Complexity\n  * App size in lines of code and amount of files and folders"
+        + "\n  * Antipatterns\n  * Angularjs version\n  * Preparation necessary for migration ");
     delay(1000);
     new AnalysisTool(directory);
 } catch (e) {
