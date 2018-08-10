@@ -14,7 +14,6 @@
  */
 
 import * as fs from 'fs';
-import { resolve } from 'dns';
 const nodesloc = require('node-sloc');
 const gitignore = require('parse-gitignore');
 const glob = require('glob');
