@@ -315,7 +315,7 @@ export class AnalysisTool {
             preparationReport += "\x1b[1m\n\nFiles that contain AngularJS patterns and need to be modified:\x1b[0m";
             let index = 1;
             for (let key of this.analysisDetails.mapOfFilesToConvert.keys()) {
-                preparationReport += "\n" + index++ + ".  " + key + " --> Modifications necessary: " + this.analysisDetails.mapOfFilesToConvert.get(key);
+                preparationReport += "\n" + index++ + ".  " + key + " --> Patterns found: " + this.analysisDetails.mapOfFilesToConvert.get(key);
             }
         }
         return Promise.resolve(preparationReport);
@@ -398,14 +398,14 @@ export class AnalysisTool {
                 if (this.typeOfApplication() == "hybrid") {
                     recommendation += "\x1b[34mEven though you have already begun making a hybrid application with"
                         + " both AngularJS and Angular, your app does not pass the necessary requirements to use ngUpgrade.\n";
-                        + "Please follow these preparation steps before migrating with ngUpgrade.\x1b[0m";
+                        + "Please follow these preparation steps in the files identified before migrating with ngUpgrade.\x1b[0m";
                 } else {
-                    recommendation += "\x1b[34mPlease follow these preparation steps before migrating with ngUpgrade.\x1b[0m";
+                    recommendation += "\x1b[34mPlease follow these preparation steps in the files identified before migrating with ngUpgrade.\x1b[0m";
                 }
                 recommendation += preparationReport + "\n";
             }
         }
-        return recommendation + "\x1b[34m\nHead to ngMigration-Forum to understand this migration approach.\n\x1b[1mhttps://github.com/angular/ngMigration-Forum/wiki\n\x1b[0m";
+        return recommendation + "\x1b[34m\nHead to \x1b[1mngMigration-Forum to understand this migration approach.\n\x1b[1mhttps://github.com/angular/ngMigration-Forum/wiki\n\x1b[0m";
     }
 
     typeOfApplication(): string {
