@@ -1,6 +1,6 @@
 {
   "name": "ngma",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Angular Migration Assistant",
   "main": "main.ts",
   "repository": "https://github.com/ellamaolson/ngMigration-Assistant.git",
