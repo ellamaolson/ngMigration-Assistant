@@ -240,7 +240,9 @@ export class AnalysisTool {
         if (filename.substr(-12) === 'package.json' || filename.substr(-10) === 'bower.json') {
             if (fileData.match(/\"\@angular\/core\"\:/) || fileData.match(/\"angular2\"\:/)) {
                 this.analysisDetails.usingAngular = true;
-            } else if (fileData.match(/\"angular\"\:/)) {
+            }
+
+            if (fileData.match(/\"angular\"\:/)) {
                 this.analysisDetails.usingAngularJS = true;
             }
         } else if (fileData.match(/https\:\/\/ajax\.googleapis\.com\/ajax\/libs\/angularjs/)) {
