@@ -167,7 +167,9 @@ export class AnalysisTool {
 
         for (let fileOrFolder of this.buildPathIgnoringGlobs(rootpath)) {
             currentPath = rootpath + "/" + fileOrFolder;
-            this.testFile(currentPath);
+            if (fs.lstatSync(currentPath).isFile()) {
+                this.testFile(currentPath)
+            }
         }
     }
 
