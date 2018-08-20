@@ -187,12 +187,16 @@ export class AnalysisTool {
             (filename: string, data: string) => this.checkFileForScriptingLanguage(filename, data),
             (filename: string, data: string) => this.checkFileForComponent(filename, data),
         ];
-        if (currentPath.substr(-3) === '.js' || currentPath.substr(-3) === '.ts' || currentPath.substr(-5) === '.html' || currentPath.substr(-5) === '.json') {
+        if (currentPath.substr(-3) === '.js' || this.fileHasTsExtension(currentPath) || currentPath.substr(-5) === '.html' || currentPath.substr(-5) === '.json') {
             this.analysisDetails.relevantFilesOrFolderCount++;
             for (let test of tests) {
                 test(currentPath, fs.readFileSync(currentPath, "utf8"));
             }
         }
+    }
+
+    fileHasTsExtension(filename: string): boolean {
+        return filename.endsWith('.ts') && !filename.endsWith('.d.ts');
     }
 
     checkFileForRootScope(filename: string, fileData: string) {
@@ -253,7 +257,7 @@ export class AnalysisTool {
         if (filename.substr(-3) === '.js') {
             this.analysisDetails.jsFileCount++;
             this.pushValueOnKey(this.analysisDetails.mapOfFilesToConvert, filename, " JavaScript");
-        } else if (filename.substr(-3) === ".ts") {
+        } else if (this.fileHasTsExtension(filename)) {
             this.analysisDetails.tsFileCount++;
         }
     }
