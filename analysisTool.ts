@@ -265,12 +265,15 @@ export class AnalysisTool {
     }
 
     checkFileForComponent(filename: string, fileData: string) {
-        if (fileData.match(/\.controller\(/)) {
-            this.analysisDetails.controllersCount++;
+        const controllerMatches = fileData.match(/\.controller\(/g);
+        const componentMatches = fileData.match(/component\(/g);
+
+        if (controllerMatches) {
+            this.analysisDetails.controllersCount += controllerMatches.length;
             this.pushValueOnKey(this.analysisDetails.mapOfFilesToConvert, filename, " controller");
         }
-        if (fileData.match(/\.component\(/) || fileData.match(/component\(/)) {
-            this.analysisDetails.componentCount++;
+        if (componentMatches) {
+            this.analysisDetails.componentCount += componentMatches.length;
         }
     }
 
