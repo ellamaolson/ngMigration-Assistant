@@ -267,13 +267,20 @@ export class AnalysisTool {
     checkFileForComponent(filename: string, fileData: string) {
         const controllerMatches = fileData.match(/\.controller\(/g);
         const componentMatches = fileData.match(/component\(/g);
+        const decoratedComponentMatches = fileData.match(/@Component\(/g);
 
         if (controllerMatches) {
             this.analysisDetails.controllersCount += controllerMatches.length;
             this.pushValueOnKey(this.analysisDetails.mapOfFilesToConvert, filename, " controller");
         }
+
         if (componentMatches) {
             this.analysisDetails.componentCount += componentMatches.length;
+        }
+
+        // AngularJS decorated component matches
+        if (decoratedComponentMatches && !fileData.includes('@angular/core')) {
+            this.analysisDetails.componentCount += decoratedComponentMatches.length;
         }
     }
 
