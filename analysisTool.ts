@@ -265,7 +265,6 @@ export class AnalysisTool {
         }
         if (fileData.match(/\.component\(/) || fileData.match(/component\(/)) {
             this.analysisDetails.componentCount++;
-            this.pushValueOnKey(this.analysisDetails.mapOfFilesToConvert, filename, " AngularJS component");
         }
     }
 
