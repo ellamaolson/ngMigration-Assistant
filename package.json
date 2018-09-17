@@ -7,13 +7,15 @@
   "author": "Elana Olson",
   "license": "MIT",
   "dependencies": {
+    "acorn": "^6.0.1",
     "glob": "^7.1.2",
     "node-sloc": "^0.1.11",
     "parse-gitignore": "^0.5.1",
     "ts-node": "^7.0.0",
     "ts-node-dev": "^1.0.0-pre.26",
     "tslint": "^5.10.0",
-    "typescript": "^2.9.2"
+    "typescript": "^2.9.2",
+    "typescript-parser": "^2.6.1"
   },
   "scripts": {
     "start": "export TS_NODE_FILES=true;ts-node-dev main.ts",

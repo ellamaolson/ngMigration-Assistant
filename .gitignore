@@ -2,3 +2,4 @@ node_modules/
 .git
 .DS_Store
 bin/
+package-lock.json

@@ -17,11 +17,15 @@ import * as fs from 'fs';
 const nodesloc = require('node-sloc');
 const gitignore = require('parse-gitignore');
 const glob = require('glob');
+const parser = new TypescriptParser();
 
 export class AnalysisTool {
 
     private CODE_LIMIT_MULTIPLIER: number = 1.25;
     private VALUE_NOT_FOUND: number = -1;
+
+
+
 
     analysisDetails = {
         rewriteThreshold: 880, // 880 lines is considered 1 month's work of coding 
@@ -139,14 +143,14 @@ export class AnalysisTool {
                     extensions: ['js', 'ts', 'html'],
                     ignorePaths: ['node_modules'],
                     ignoreDefaut: false,
-                }
+                };
                 promisesINeedResolvedForMeToBeDone.push(
                     nodesloc(options)
                         .then((results: any) => {
                             lines += results.sloc.sloc || 0;
                         })
                         .catch((err: any) => {
-                            console.log("Is there")
+                            console.log("Is there");
                             console.error(err);
                             reject(err);
                         })
@@ -162,11 +166,11 @@ export class AnalysisTool {
      * @param rootPath original directory path
      */
     private runAnalysis(rootpath: string) {
-        const list = fs.readdirSync(rootpath);
-        let currentPath: string = "";
+        // const list = fs.readdirSync(rootpath);
+        // let currentPath: string = "";
 
         for (let fileOrFolder of this.buildPathIgnoringGlobs(rootpath)) {
-            currentPath = rootpath + "/" + fileOrFolder;
+            let currentPath = rootpath + "/" + fileOrFolder;
             if (fs.lstatSync(currentPath).isFile()) {
                 this.testFile(currentPath);
             }
