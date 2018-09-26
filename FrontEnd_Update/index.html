@@ -6,13 +6,14 @@
     <title>ngma Desktop</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" media="screen" href="style.css" />
-    <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css"
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css" />
     <script src="main.js"></script>
+
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class = "container">
-            <a class="navbar-brand" href="Main.html">ngma Desktop</a>
+            <a class="navbar-brand" href="index.html">ngma Desktop</a>
             <a class="nav-item nav-link text-secondary" href="About.html">About</a>
             <a class="nav-item nav-link text-secondary" href="Upload.html">Upload Files</a>
         </div>
@@ -24,8 +25,9 @@
             <p class = "lead text-center">Convert your AngularJS files to Angular with ease by uploading your files</p>
             
             <div class = "col-md text-center">
-                <textarea id = "output" class = "form-control" placeholder = "File Contents" rows = 10></textarea><br>
-                <button class = "btn btn-info text-center" id = "openButton">Upload Files</button>
+                <input type = "file" id = "real-file" hidden = "hidden"/>
+                <button class = "btn btn-info text-center" id = "custom-button">Upload Files</button>
+                &nbsp;<span class = "lead" id = "custom-text">No file chosen</span>
             </div>
         </div>
     </div>
