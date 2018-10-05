@@ -14,6 +14,8 @@
  */
 
 import * as fs from 'fs';
+import {TypescriptParser} from "typescript-parser";
+
 const nodesloc = require('node-sloc');
 const gitignore = require('parse-gitignore');
 const glob = require('glob');
@@ -191,6 +193,7 @@ export class AnalysisTool {
             (filename: string, data: string) => this.checkFileForUnitTests(filename, data),
             (filename: string, data: string) => this.checkAngularVersion(filename, data),
             (filename: string, data: string) => this.checkFileForScriptingLanguage(filename, data),
+            (filename: string, data: string) => this.checkFileForTsCode(filename, data),
             (filename: string, data: string) => this.checkFileForComponent(filename, data),
         ];
         if (currentPath.substr(-3) === '.js' || this.fileHasTsExtension(currentPath) || currentPath.substr(-5) === '.html' || currentPath.substr(-5) === '.json') {
@@ -201,8 +204,25 @@ export class AnalysisTool {
         }
     }
 
+    createTsAST(fileData: string) {
+
+        // console.log(parser.parseSource(fileData));
+        // return ;
+    }
+
     fileHasTsExtension(filename: string): boolean {
         return filename.endsWith('.ts') && !filename.endsWith('.d.ts');
+    }
+
+    checkFileForTsCode(fileName: string, fileData: string) {
+        parser.parseSource(fileData).then(function(data) {
+            console.log(data);
+        });
+        // let tsAST = this.createTsAST(fileData);
+
+        // if (tsAST) {
+            // console.log(tsAST);
+        // }
     }
 
     checkFileForRootScope(filename: string, fileData: string) {
