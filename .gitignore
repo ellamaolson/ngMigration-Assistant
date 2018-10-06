@@ -3,3 +3,4 @@ node_modules/
 .DS_Store
 bin/
 package-lock.json
+.idea/
