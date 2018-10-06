@@ -6,8 +6,9 @@
     <title>ngma Desktop</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" media="screen" href="style.css" />
-    <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css"
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css" />
     <script src="main.js"></script>
+
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
@@ -22,12 +23,18 @@
         <div class = "container">
             <h1 class = "display-1 text-center">Welcome to ngma Desktop</h1>
             <p class = "lead text-center">Convert your AngularJS files to Angular with ease by uploading your files</p>
-    
+            
             <div class = "col-md text-center">
-                <button class = "btn btn-info text-center">Upload Files</button>
+                <input type = "file" id = "real-file" hidden = "hidden" name = "file[]" multiple webkitdirectory />
+                <button class = "btn btn-info text-center" id = "custom-button">Upload Files</button>
+                &nbsp;<span class = "lead" id = "custom-text">No file chosen</span>
             </div>
         </div>
     </div>
+
+    <script>
+        require("./renderer.js")
+    </script>
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
