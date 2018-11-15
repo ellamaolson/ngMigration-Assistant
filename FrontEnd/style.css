@@ -3,3 +3,23 @@
     display: flex;
     align-items: center;
 }
+
+#scanbutton {
+    display: none;
+    margin: 0 auto;
+}
+
+.dropzone {
+    width: 70%;
+    height: 70%;
+    border: 2px dashed #ccc;
+    color: #ccc;
+    line-height: 300px;
+    text-align: center;
+    margin: 0 auto;
+}
+
+.dropzone.dragover {
+    border-color: #000;
+    color: #000;
+}

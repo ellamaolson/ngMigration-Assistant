@@ -1,5 +1,5 @@
 const { app, BrowserWindow } = require('electron')
-  
+const { ipcMain } = require('electron')  
   function createWindow () {
     // Create the browser window.
     win = new BrowserWindow({ width: 800, height: 600 })
@@ -7,7 +7,8 @@ const { app, BrowserWindow } = require('electron')
     // and load the index.html of the app.
     win.loadFile('index.html')
   }
-  
+
   app.on('ready', createWindow)
+
 
   
