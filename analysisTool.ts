@@ -26,6 +26,7 @@ export class AnalysisTool {
     analysisDetails = {
         rewriteThreshold: 880, // 880 lines is considered 1 month's work of coding 
         angularElement: false,
+        scope: false,
         rootScope: false,
         compile: false,
         uiRouter: false,
@@ -180,6 +181,7 @@ export class AnalysisTool {
      */
     testFile(currentPath: string) {
         let tests = [
+            (filename: string, data: string) => this.checkFileForScope(filename, data),
             (filename: string, data: string) => this.checkFileForRootScope(filename, data),
             (filename: string, data: string) => this.checkFileForCompile(filename, data),
             (filename: string, data: string) => this.checkFileForAngularElement(filename, data),
@@ -199,6 +201,15 @@ export class AnalysisTool {
 
     fileHasTsExtension(filename: string): boolean {
         return filename.endsWith('.ts') && !filename.endsWith('.d.ts');
+    }
+
+    checkFileForScope(filename: string, fileData: string) {
+        if(filename.substr(-7, 4) != 'spec' && !filename.includes('test')) {
+            if(fileData.match(/\$scope/) && fileData.match(/\.controller/)) {
+                this.analysisDetails.scope = true;
+                this.pushValueOnKey(this.analysisDetails.mapOfFilesToConvert, filename, "$scope");
+            }
+        }
     }
 
     checkFileForRootScope(filename: string, fileData: string) {
@@ -303,6 +314,10 @@ export class AnalysisTool {
     private runAntiPatternReport(): Promise<any> {
         let preparationReport = "";
 
+        if (this.analysisDetails.scope) {
+            preparationReport += "\n  * App controller contains $scope, please refactor to remove $scope dependancy.";
+            this.analysisDetails.rewriteThreshold *= this.CODE_LIMIT_MULTIPLIER;
+        }
         if (this.analysisDetails.rootScope) {
             preparationReport += "\n  * App contains $rootScope, please refactor rootScope into services.";
             this.analysisDetails.rewriteThreshold *= this.CODE_LIMIT_MULTIPLIER;
@@ -353,6 +368,9 @@ export class AnalysisTool {
             + "\n  * AngularJS Patterns: ";
         if (this.analysisDetails.rootScope) {
             report += " $rootScope, ";
+        }
+        if (this.analysisDetails.scope) {
+            report += " $scope, ";
         }
         if (this.analysisDetails.compile) {
             report += " $compile, ";
