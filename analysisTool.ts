@@ -194,7 +194,12 @@ export class AnalysisTool {
         if (currentPath.substr(-3) === '.js' || this.fileHasTsExtension(currentPath) || currentPath.substr(-5) === '.html' || currentPath.substr(-5) === '.json') {
             this.analysisDetails.relevantFilesOrFolderCount++;
             for (let test of tests) {
-                test(currentPath, fs.readFileSync(currentPath, "utf8"));
+                try {
+                    test(currentPath, fs.readFileSync(currentPath, "utf8"));
+                }
+                catch (error) {
+                    console.error(`Error: Could not read ${currentPath}`);
+                }
             }
         }
     }
