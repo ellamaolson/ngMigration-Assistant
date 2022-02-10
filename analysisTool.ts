@@ -191,7 +191,7 @@ export class AnalysisTool {
             (filename: string, data: string) => this.checkFileForScriptingLanguage(filename, data),
             (filename: string, data: string) => this.checkFileForComponent(filename, data),
         ];
-        if (currentPath.substr(-3) === '.js' || this.fileHasTsExtension(currentPath) || currentPath.substr(-5) === '.html' || currentPath.substr(-5) === '.json') {
+        if ((currentPath.substr(-3) === '.js' || this.fileHasTsExtension(currentPath) || currentPath.substr(-5) === '.html' || currentPath.substr(-5) === '.json') && fs.lstatSync(currentPath).isFile()) {
             this.analysisDetails.relevantFilesOrFolderCount++;
             for (let test of tests) {
                 try {
